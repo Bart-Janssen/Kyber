@@ -8,6 +8,7 @@ import javax.smartcardio.TerminalFactory;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.security.SecureRandom;
 import java.util.List;
 
 public class KeyServer extends Server
@@ -35,7 +36,9 @@ public class KeyServer extends Server
             }
             System.out.print("[Server]  : Public Key length: " + super.publicKey.length + " | ");super.print(super.publicKey);
             System.out.print("[Server]  : Private Key length: " + privateKey.length + " | ");super.print(privateKey);
-            this.smartCard.storePrivateKey(keyPair.getPrivateKey());
+            this.smartCard.storePrivateKey(privateKey);
+            //writing random data to private key variable in memory
+            new SecureRandom().nextBytes(privateKey);
         }
         else
         {

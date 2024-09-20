@@ -12,7 +12,6 @@ public class APDU
     private byte[] le;
     private boolean leAbsent;
     private boolean lcAbsent;
-
     private byte[] data;
 
     public APDU(int cla, int ins, int p1, int p2, byte[] data)

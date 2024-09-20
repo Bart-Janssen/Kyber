@@ -1,7 +1,6 @@
 package Kyber;
 
 import Kyber.Models.KeyPair;
-import Kyber.Models.KyberDecrypted;
 import Kyber.Models.KyberEncrypted;
 import Kyber.Reference.*;
 import java.security.SecureRandom;
@@ -16,7 +15,7 @@ public class KyberService
         throw new RuntimeException("Mode not supported.");
     }
 
-    public KyberEncrypted generateSecretKeyClient(int mode, byte[] publicKey) throws Exception
+    public KyberEncrypted encapsulate(int mode, byte[] publicKey) throws Exception
     {
         byte[] random = new byte[32];
         SecureRandom.getInstanceStrong().nextBytes(random);
@@ -28,17 +27,9 @@ public class KyberService
 
     public byte[] decapsulate(int mode, byte[] privateKey, byte[] encapsulation) throws Exception
     {
-        byte[] sharedSecret;
-        KyberDecrypted kyberDecrypted = this.extractSecret(mode, privateKey, encapsulation);
-        sharedSecret = kyberDecrypted.getSecretKey();
-        return sharedSecret;
-    }
-
-    private KyberDecrypted extractSecret(int mode, byte[] privateKey, byte[] encapsulation) throws Exception
-    {
-        if (mode == 512) return new KyberAlgorithm().decrypt512(encapsulation, privateKey);
-        if (mode == 768) return new KyberAlgorithm().decrypt768(encapsulation, privateKey);
-        if (mode == 1024) return new KyberAlgorithm().decrypt1024(encapsulation, privateKey);
+        if (mode == 512) return new KyberAlgorithm().decrypt512(encapsulation, privateKey).getSecretKey();
+        if (mode == 768) return new KyberAlgorithm().decrypt768(encapsulation, privateKey).getSecretKey();
+        if (mode == 1024) return new KyberAlgorithm().decrypt1024(encapsulation, privateKey).getSecretKey();
         throw new RuntimeException("Mode not supported.");
     }
 

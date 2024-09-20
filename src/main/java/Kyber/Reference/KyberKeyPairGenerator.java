@@ -104,18 +104,21 @@ public class KyberKeyPairGenerator
         System.arraycopy(fullSeed, KyberParams.paramsSymBytes, noiseSeed, 0, KyberParams.paramsSymBytes);
         short[][][] a = generateMatrix(publicSeed, false, paramsK);
         byte nonce = (byte) 0;
-        for (int i = 0; i < paramsK; i++) {
+        for (int i = 0; i < paramsK; i++)
+        {
             skpv[i] = Poly.getNoisePoly(noiseSeed, nonce, paramsK);
             nonce = (byte) (nonce + (byte) 1);
         }
-        for (int i = 0; i < paramsK; i++) {
+        for (int i = 0; i < paramsK; i++)
+        {
             e[i] = Poly.getNoisePoly(noiseSeed, nonce, paramsK);
             nonce = (byte) (nonce + (byte) 1);
         }
         skpv = Poly.polyVectorNTT(skpv, paramsK);
         skpv = Poly.polyVectorReduce(skpv, paramsK);
         e = Poly.polyVectorNTT(e, paramsK);
-        for (int i = 0; i < paramsK; i++) {
+        for (int i = 0; i < paramsK; i++)
+        {
             short[] temp = Poly.polyVectorPointWiseAccMont(a[i], skpv, paramsK);
             pkpv[i] = Poly.polyToMont(temp);
         }
@@ -124,21 +127,25 @@ public class KyberKeyPairGenerator
         return new KeyPair(packPrivateKey(skpv, paramsK), packPublicKey(pkpv, publicSeed, paramsK));
     }
 
-    public void generateUniform(KyberUniformRandom uniformRandom, byte[] buf, int bufl, int l) {
+    public void generateUniform(KyberUniformRandom uniformRandom, byte[] buf, int bufl, int l)
+    {
         short[] uniformR = new short[KyberParams.paramsPolyBytes];
         int d1;
         int d2;
         int uniformI = 0; // Always start at 0
         int j = 0;
-        while ((uniformI < l) && ((j + 3) <= bufl)) {
+        while ((uniformI < l) && ((j + 3) <= bufl))
+        {
             d1 = (int) (((((int) (buf[j] & 0xFF)) >> 0) | (((int) (buf[j + 1] & 0xFF)) << 8)) & 0xFFF);
             d2 = (int) (((((int) (buf[j + 1] & 0xFF)) >> 4) | (((int) (buf[j + 2] & 0xFF)) << 4)) & 0xFFF);
             j = j + 3;
-            if (d1 < (int) KyberParams.paramsQ) {
+            if (d1 < (int) KyberParams.paramsQ)
+            {
                 uniformR[uniformI] = (short) d1;
                 uniformI++;
             }
-            if (uniformI < l && d2 < (int) KyberParams.paramsQ) {
+            if (uniformI < l && d2 < (int) KyberParams.paramsQ)
+            {
                 uniformR[uniformI] = (short) d2;
                 uniformI++;
             }
@@ -147,21 +154,27 @@ public class KyberKeyPairGenerator
         uniformRandom.setUniformR(uniformR);
     }
 
-    public short[][][] generateMatrix(byte[] seed, boolean transposed, int paramsK) {
+    public short[][][] generateMatrix(byte[] seed, boolean transposed, int paramsK)
+    {
         short[][][] r = new short[paramsK][paramsK][KyberParams.paramsPolyBytes];
         byte[] buf = new byte[672];
         KyberUniformRandom uniformRandom = new KyberUniformRandom();
         KeccakSponge xof = new Shake128();
-        for (int i = 0; i < paramsK; i++) {
+        for (int i = 0; i < paramsK; i++)
+        {
             r[i] = Poly.generateNewPolyVector(paramsK);
-            for (int j = 0; j < paramsK; j++) {
+            for (int j = 0; j < paramsK; j++)
+            {
                 xof.reset();
                 xof.getAbsorbStream().write(seed);
                 byte[] ij = new byte[2];
-                if (transposed) {
+                if (transposed)
+                {
                     ij[0] = (byte) i;
                     ij[1] = (byte) j;
-                } else {
+                }
+                else
+                {
                     ij[0] = (byte) j;
                     ij[1] = (byte) i;
                 }
@@ -170,11 +183,13 @@ public class KyberKeyPairGenerator
                 generateUniform(uniformRandom, Arrays.copyOfRange(buf, 0, 504), 504, KyberParams.paramsN);
                 int ui = uniformRandom.getUniformI();
                 r[i][j] = uniformRandom.getUniformR();
-                while (ui < KyberParams.paramsN) {
+                while (ui < KyberParams.paramsN)
+                {
                     generateUniform(uniformRandom, Arrays.copyOfRange(buf, 504, 672), 168, KyberParams.paramsN - ui);
                     int ctrn = uniformRandom.getUniformI();
                     short[] missing = uniformRandom.getUniformR();
-                    for (int k = ui; k < KyberParams.paramsN; k++) {
+                    for (int k = ui; k < KyberParams.paramsN; k++)
+                    {
                         r[i][j][k] = missing[k - ui];
                     }
                     ui = ui + ctrn;
@@ -184,9 +199,9 @@ public class KyberKeyPairGenerator
         return r;
     }
 
-    public byte[] packPrivateKey(short[][] privateKey, int paramsK) {
-        byte[] packedPrivateKey = Poly.polyVectorToBytes(privateKey, paramsK);
-        return packedPrivateKey;
+    public byte[] packPrivateKey(short[][] privateKey, int paramsK)
+    {
+        return Poly.polyVectorToBytes(privateKey, paramsK);
     }
 
     public byte[] packPublicKey(short[][] publicKey, byte[] seed, int paramsK)

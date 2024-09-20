@@ -4,14 +4,13 @@ import Kyber.Models.*;
 import com.github.aelstad.keccakj.core.KeccakSponge;
 import com.github.aelstad.keccakj.fips202.Shake128;
 import com.github.aelstad.keccakj.fips202.Shake256;
-import java.security.InvalidKeyException;
 import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 
 public class KyberAlgorithm
 {
-    public KyberEncrypted encrypt512(byte[] variant, byte[] publicKey) throws IllegalArgumentException, InvalidKeyException, NoSuchAlgorithmException {
+    public KyberEncrypted encrypt512(byte[] variant, byte[] publicKey) throws Exception
+    {
         variant = verifyVariant(variant);
         int paramsK = 2;
         byte[] sharedSecret = new byte[KyberParams.paramsSymBytes];
@@ -36,7 +35,7 @@ public class KyberAlgorithm
         return new KyberEncrypted(ciphertext, sharedSecret);
     }
 
-    public KyberDecrypted decrypt512(byte[] ciphertext, byte[] privateKey) throws NoSuchAlgorithmException
+    public KyberDecrypted decrypt512(byte[] ciphertext, byte[] privateKey) throws Exception
     {
         int paramsK = 2;
         byte[] sharedSecretFixedLength = new byte[KyberParams.KyberSSBytes];
@@ -60,7 +59,8 @@ public class KyberAlgorithm
         MessageDigest md = MessageDigest.getInstance("SHA3-256");
         byte[] krh = md.digest(ciphertext);
         int index = KyberParams.Kyber512SKBytes - KyberParams.paramsSymBytes;
-        for (int i = 0; i < KyberParams.paramsSymBytes; i++) {
+        for (int i = 0; i < KyberParams.paramsSymBytes; i++)
+        {
             kr[i] = (byte) ((int) (kr[i] & 0xFF) ^ ((int) (fail & 0xFF) & ((int) (kr[i] & 0xFF) ^ (int) (privateKey[index] & 0xFF))));
             index += 1;
         }
@@ -126,7 +126,8 @@ public class KyberAlgorithm
         MessageDigest md = MessageDigest.getInstance("SHA3-256");
         byte[] krh = md.digest(encapsulation);
         int index = KyberParams.Kyber768SKBytes - KyberParams.paramsSymBytes;
-        for (int i = 0; i < KyberParams.paramsSymBytes; i++) {
+        for (int i = 0; i < KyberParams.paramsSymBytes; i++)
+        {
             kr[i] = (byte) ((int) (kr[i] & 0xFF) ^ ((int) (fail & 0xFF) & ((int) (kr[i] & 0xFF) ^ (int) (privateKey[index] & 0xFF))));
             index += 1;
         }
@@ -140,7 +141,7 @@ public class KyberAlgorithm
         return new KyberDecrypted(plain, sharedSecretFixedLength);
     }
 
-    public KyberEncrypted encrypt1024(byte[] variant, byte[] publicKey) throws NoSuchAlgorithmException, InvalidKeyException
+    public KyberEncrypted encrypt1024(byte[] variant, byte[] publicKey) throws Exception
     {
         variant = verifyVariant(variant);
         int paramsK = 4;
@@ -207,7 +208,8 @@ public class KyberAlgorithm
         return new KyberDecrypted(plain, sharedSecretFixedLength);
     }
 
-    public byte[] decrypt(byte[] packedCipherText, byte[] privateKey, int paramsK) {
+    public byte[] decrypt(byte[] packedCipherText, byte[] privateKey, int paramsK)
+    {
         UnpackedCipherText unpackedCipherText = unpackCiphertext(packedCipherText, paramsK);
         short[][] bp = unpackedCipherText.getBp();
         short[] v = unpackedCipherText.getV();
@@ -220,11 +222,13 @@ public class KyberAlgorithm
         return Poly.polyToMsg(mp);
     }
 
-    public UnpackedCipherText unpackCiphertext(byte[] c, int paramsK) {
+    public UnpackedCipherText unpackCiphertext(byte[] c, int paramsK)
+    {
         UnpackedCipherText unpackedCipherText = new UnpackedCipherText();
         byte[] bpc;
         byte[] vc;
-        switch (paramsK) {
+        switch (paramsK)
+        {
             case 2:
                 bpc = new byte[KyberParams.paramsPolyvecCompressedBytesK512];
                 break;
@@ -249,7 +253,8 @@ public class KyberAlgorithm
         return unpackedPrivateKey;
     }
 
-    public byte[] encrypt(byte[] m, byte[] publicKey, byte[] coins, int paramsK) {
+    public byte[] encrypt(byte[] m, byte[] publicKey, byte[] coins, int paramsK)
+    {
         short[][] sp = Poly.generateNewPolyVector(paramsK);
         short[][] ep = Poly.generateNewPolyVector(paramsK);
         short[][] bp = Poly.generateNewPolyVector(paramsK);
@@ -257,7 +262,8 @@ public class KyberAlgorithm
         short[] k = Poly.polyFromData(m);
         short[][][] at = generateMatrix(Arrays.copyOfRange(unpackedPublicKey.getSeed(), 0, KyberParams.paramsSymBytes), true, paramsK);
 
-        for (int i = 0; i < paramsK; i++) {
+        for (int i = 0; i < paramsK; i++)
+        {
             sp[i] = Poly.getNoisePoly(coins, (byte) (i), paramsK);
             ep[i] = Poly.getNoisePoly(coins, (byte) (i + paramsK), 3);
         }
@@ -265,7 +271,8 @@ public class KyberAlgorithm
         short[] epp = Poly.getNoisePoly(coins, (byte) (paramsK * 2), 3);
         sp = Poly.polyVectorNTT(sp, paramsK);
         sp = Poly.polyVectorReduce(sp, paramsK);
-        for (int i = 0; i < paramsK; i++) {
+        for (int i = 0; i < paramsK; i++)
+        {
             bp[i] = Poly.polyVectorPointWiseAccMont(at[i], sp, paramsK);
         }
         short[] v = Poly.polyVectorPointWiseAccMont(unpackedPublicKey.getPublicKeyPolyvec(), sp, paramsK);
@@ -278,9 +285,11 @@ public class KyberAlgorithm
         return packCiphertext(bp, Poly.polyReduce(v), paramsK);
     }
 
-    public static UnpackedPublicKey unpackPublicKey(byte[] packedPublicKey, int paramsK) {
+    public static UnpackedPublicKey unpackPublicKey(byte[] packedPublicKey, int paramsK)
+    {
         UnpackedPublicKey unpackedKey = new UnpackedPublicKey();
-        switch (paramsK) {
+        switch (paramsK)
+        {
             case 2:
                 unpackedKey.setPublicKeyPolyvec(Poly.polyVectorFromBytes(Arrays.copyOfRange(packedPublicKey, 0, KyberParams.paramsPolyvecBytesK512), paramsK));
                 unpackedKey.setSeed(Arrays.copyOfRange(packedPublicKey, KyberParams.paramsPolyvecBytesK512, packedPublicKey.length));
@@ -296,21 +305,27 @@ public class KyberAlgorithm
         return unpackedKey;
     }
 
-    public static short[][][] generateMatrix(byte[] seed, boolean transposed, int paramsK) {
+    public static short[][][] generateMatrix(byte[] seed, boolean transposed, int paramsK)
+    {
         short[][][] r = new short[paramsK][paramsK][KyberParams.paramsPolyBytes];
         byte[] buf = new byte[672];
         KyberUniformRandom uniformRandom = new KyberUniformRandom();
         KeccakSponge xof = new Shake128();
-        for (int i = 0; i < paramsK; i++) {
+        for (int i = 0; i < paramsK; i++)
+        {
             r[i] = Poly.generateNewPolyVector(paramsK);
-            for (int j = 0; j < paramsK; j++) {
+            for (int j = 0; j < paramsK; j++)
+            {
                 xof.reset();
                 xof.getAbsorbStream().write(seed);
                 byte[] ij = new byte[2];
-                if (transposed) {
+                if (transposed)
+                {
                     ij[0] = (byte) i;
                     ij[1] = (byte) j;
-                } else {
+                }
+                else
+                {
                     ij[0] = (byte) j;
                     ij[1] = (byte) i;
                 }
@@ -319,11 +334,13 @@ public class KyberAlgorithm
                 generateUniform(uniformRandom, Arrays.copyOfRange(buf, 0, 504), 504, KyberParams.paramsN);
                 int ui = uniformRandom.getUniformI();
                 r[i][j] = uniformRandom.getUniformR();
-                while (ui < KyberParams.paramsN) {
+                while (ui < KyberParams.paramsN)
+                {
                     generateUniform(uniformRandom, Arrays.copyOfRange(buf, 504, 672), 168, KyberParams.paramsN - ui);
                     int ctrn = uniformRandom.getUniformI();
                     short[] missing = uniformRandom.getUniformR();
-                    for (int k = ui; k < KyberParams.paramsN; k++) {
+                    for (int k = ui; k < KyberParams.paramsN; k++)
+                    {
                         r[i][j][k] = missing[k - ui];
                     }
                     ui = ui + ctrn;
@@ -333,21 +350,25 @@ public class KyberAlgorithm
         return r;
     }
 
-    public static void generateUniform(KyberUniformRandom uniformRandom, byte[] buf, int bufl, int l) {
+    public static void generateUniform(KyberUniformRandom uniformRandom, byte[] buf, int bufl, int l)
+    {
         short[] uniformR = new short[KyberParams.paramsPolyBytes];
         int d1;
         int d2;
         int uniformI = 0; // Always start at 0
         int j = 0;
-        while ((uniformI < l) && ((j + 3) <= bufl)) {
+        while ((uniformI < l) && ((j + 3) <= bufl))
+        {
             d1 = (int) (((((int) (buf[j] & 0xFF)) >> 0) | (((int) (buf[j + 1] & 0xFF)) << 8)) & 0xFFF);
             d2 = (int) (((((int) (buf[j + 1] & 0xFF)) >> 4) | (((int) (buf[j + 2] & 0xFF)) << 4)) & 0xFFF);
             j = j + 3;
-            if (d1 < (int) KyberParams.paramsQ) {
+            if (d1 < (int) KyberParams.paramsQ)
+            {
                 uniformR[uniformI] = (short) d1;
                 uniformI++;
             }
-            if (uniformI < l && d2 < (int) KyberParams.paramsQ) {
+            if (uniformI < l && d2 < (int) KyberParams.paramsQ)
+            {
                 uniformR[uniformI] = (short) d2;
                 uniformI++;
             }
@@ -368,29 +389,30 @@ public class KyberAlgorithm
 
     public int constantTimeCompare(byte[] x, byte[] y)
     {
-        if (x.length != y.length) {
-            return 1;
-        }
-
+        if (x.length != y.length) return 1;
         byte v = 0;
-
-        for (int i = 0; i < x.length; i++) {
+        for (int i = 0; i < x.length; i++)
+        {
             v = (byte) ((int) (v & 0xFF) | ((int) (x[i] & 0xFF) ^ (int) (y[i] & 0xFF)));
         }
         return Byte.compare(v, (byte) 0);
     }
 
-    private byte[] verifyVariant(byte[] variant) throws IllegalArgumentException {
-        if (variant.length > KyberParams.paramsSymBytes) {
+    private byte[] verifyVariant(byte[] variant) throws Exception
+    {
+        if (variant.length > KyberParams.paramsSymBytes)
+        {
             throw new IllegalArgumentException("Byte array exceeds allowable size of " + KyberParams.paramsSymBytes + " bytes");
-        } else if (variant.length < KyberParams.paramsSymBytes) {
+        }
+        else if (variant.length < KyberParams.paramsSymBytes)
+        {
             byte[] tempData = new byte[KyberParams.paramsSymBytes];
             System.arraycopy(variant, 0, tempData, 0, variant.length);
             byte[] emptyBytes = new byte[KyberParams.paramsSymBytes - variant.length];
-            for (int i = 0; i < emptyBytes.length; ++i) {
+            for (int i = 0; i < emptyBytes.length; ++i)
+            {
                 emptyBytes[i] = (byte) 0;
             }
-
             System.arraycopy(emptyBytes, 0, tempData, variant.length, emptyBytes.length);
             return tempData;
         }
