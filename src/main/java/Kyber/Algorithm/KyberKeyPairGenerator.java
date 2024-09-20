@@ -32,6 +32,58 @@ public class KyberKeyPairGenerator
         return new KeyPair(privateKeyFixedLength, packedPublicKey);
     }
 
+    public KeyPair generateKeys768(SecureRandom rand) throws Exception
+    {
+        int paramsK = 3;
+        KeyPair indcpaPKI = this.generateKyberKeys(paramsK);
+        byte[] packedPrivateKey = indcpaPKI.getPrivateKey();
+        byte[] packedPublicKey = indcpaPKI.getPublicKey();
+        byte[] privateKeyFixedLength = new byte[KyberParams.Kyber768SKBytes];
+        MessageDigest md = MessageDigest.getInstance("SHA3-256");
+
+        byte[] encodedHash = md.digest(packedPublicKey);
+        byte[] pkh = new byte[encodedHash.length];
+        System.arraycopy(encodedHash, 0, pkh, 0, encodedHash.length);
+        byte[] rnd = new byte[KyberParams.paramsSymBytes];
+        rand.nextBytes(rnd);
+
+        int offsetEnd = packedPrivateKey.length;
+        System.arraycopy(packedPrivateKey, 0, privateKeyFixedLength, 0, offsetEnd);
+        System.arraycopy(packedPublicKey, 0, privateKeyFixedLength, offsetEnd, packedPublicKey.length);
+        offsetEnd = offsetEnd + packedPublicKey.length;
+
+        System.arraycopy(pkh, 0, privateKeyFixedLength, offsetEnd, pkh.length);
+        offsetEnd += pkh.length;
+        System.arraycopy(rnd, 0, privateKeyFixedLength, offsetEnd, rnd.length);
+        return new KeyPair(privateKeyFixedLength, packedPublicKey);
+    }
+
+    public KeyPair generateKeys1024(SecureRandom rand) throws Exception
+    {
+        int paramsK = 4;
+        KeyPair indcpaPKI = this.generateKyberKeys(paramsK);
+        byte[] packedPrivateKey = indcpaPKI.getPrivateKey();
+        byte[] packedPublicKey = indcpaPKI.getPublicKey();
+        byte[] privateKeyFixedLength = new byte[KyberParams.Kyber1024SKBytes];
+        MessageDigest md = MessageDigest.getInstance("SHA3-256");
+
+        byte[] encodedHash = md.digest(packedPublicKey);
+        byte[] pkh = new byte[encodedHash.length];
+        System.arraycopy(encodedHash, 0, pkh, 0, encodedHash.length);
+        byte[] rnd = new byte[KyberParams.paramsSymBytes];
+        rand.nextBytes(rnd);
+
+        int offsetEnd = packedPrivateKey.length;
+        System.arraycopy(packedPrivateKey, 0, privateKeyFixedLength, 0, offsetEnd);
+        System.arraycopy(packedPublicKey, 0, privateKeyFixedLength, offsetEnd, packedPublicKey.length);
+        offsetEnd = offsetEnd + packedPublicKey.length;
+
+        System.arraycopy(pkh, 0, privateKeyFixedLength, offsetEnd, pkh.length);
+        offsetEnd += pkh.length;
+        System.arraycopy(rnd, 0, privateKeyFixedLength, offsetEnd, rnd.length);
+        return new KeyPair(privateKeyFixedLength, packedPublicKey);
+    }
+
     public KeyPair generateKyberKeys(int paramsK) throws Exception
     {
         short[][] skpv = Poly.generateNewPolyVector(paramsK);
@@ -134,24 +186,26 @@ public class KyberKeyPairGenerator
         return packedPrivateKey;
     }
 
-    public byte[] packPublicKey(short[][] publicKey, byte[] seed, int paramsK) {
+    public byte[] packPublicKey(short[][] publicKey, byte[] seed, int paramsK)
+    {
         byte[] initialArray = Poly.polyVectorToBytes(publicKey, paramsK);
-        switch (paramsK) {
+        switch (paramsK)
+        {
             case 2:
                 byte[] packedPublicKey = new byte[KyberParams.paramsIndcpaPublicKeyBytesK512];
                 System.arraycopy(initialArray, 0, packedPublicKey, 0, initialArray.length);
                 System.arraycopy(seed, 0, packedPublicKey, initialArray.length, seed.length);
                 return packedPublicKey;
-//            case 3:
-//                packedPublicKey = new byte[KyberParams.paramsIndcpaPublicKeyBytesK768];
-//                System.arraycopy(initialArray, 0, packedPublicKey, 0, initialArray.length);
-//                System.arraycopy(seed, 0, packedPublicKey, initialArray.length, seed.length);
-//                break;
-//            default:
-//                packedPublicKey = new byte[KyberParams.paramsIndcpaPublicKeyBytesK1024];
-//                System.arraycopy(initialArray, 0, packedPublicKey, 0, initialArray.length);
-//                System.arraycopy(seed, 0, packedPublicKey, initialArray.length, seed.length);
+            case 3:
+                packedPublicKey = new byte[KyberParams.paramsIndcpaPublicKeyBytesK768];
+                System.arraycopy(initialArray, 0, packedPublicKey, 0, initialArray.length);
+                System.arraycopy(seed, 0, packedPublicKey, initialArray.length, seed.length);
+                return packedPublicKey;
+            default:
+                packedPublicKey = new byte[KyberParams.paramsIndcpaPublicKeyBytesK1024];
+                System.arraycopy(initialArray, 0, packedPublicKey, 0, initialArray.length);
+                System.arraycopy(seed, 0, packedPublicKey, initialArray.length, seed.length);
+                return packedPublicKey;
         }
-        throw new RuntimeException("Not supposed to be here.");
     }
 }

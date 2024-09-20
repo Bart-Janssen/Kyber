@@ -73,6 +73,139 @@ public class KyberAlgorithm
         return new KyberDecrypted(plain, sharedSecretFixedLength);
     }
 
+    public KyberEncrypted encrypt768(byte[] variant, byte[] publicKey) throws Exception
+    {
+        variant = verifyVariant(variant);
+        int paramsK = 3;
+        byte[] sharedSecret = new byte[KyberParams.paramsSymBytes];
+        MessageDigest md = MessageDigest.getInstance("SHA3-256");
+        byte[] buf1 = md.digest(variant);
+        byte[] buf2 = md.digest(publicKey);
+        byte[] buf3 = new byte[buf1.length + buf2.length];
+        System.arraycopy(buf1, 0, buf3, 0, buf1.length);
+        System.arraycopy(buf2, 0, buf3, buf1.length, buf2.length);
+        MessageDigest md512 = MessageDigest.getInstance("SHA3-512");
+        byte[] kr = md512.digest(buf3);
+        byte[] subKr = new byte[kr.length - KyberParams.paramsSymBytes];
+        System.arraycopy(kr, KyberParams.paramsSymBytes, subKr, 0, subKr.length);
+        byte[] ciphertext = this.encrypt(buf1, publicKey, subKr, paramsK);
+        byte[] krc = md.digest(ciphertext);
+        byte[] newKr = new byte[KyberParams.paramsSymBytes + krc.length];
+        System.arraycopy(kr, 0, newKr, 0, KyberParams.paramsSymBytes);
+        System.arraycopy(krc, 0, newKr, KyberParams.paramsSymBytes, krc.length);
+        KeccakSponge xof = new Shake256();
+        xof.getAbsorbStream().write(newKr);
+        xof.getSqueezeStream().read(sharedSecret);
+        return new KyberEncrypted(ciphertext, sharedSecret);
+    }
+
+    public KyberDecrypted decrypt768(byte[] encapsulation, byte[] privateKey) throws Exception
+    {
+        int paramsK = 3;
+        byte[] sharedSecretFixedLength = new byte[KyberParams.KyberSSBytes];
+        byte[] indcpaPrivateKey = new byte[KyberParams.paramsIndcpaSecretKeyBytesK768];
+        System.arraycopy(privateKey, 0, indcpaPrivateKey, 0, indcpaPrivateKey.length);
+        byte[] publicKey = new byte[KyberParams.paramsIndcpaPublicKeyBytesK768];
+        System.arraycopy(privateKey, KyberParams.paramsIndcpaSecretKeyBytesK768, publicKey, 0, publicKey.length);
+
+        //buf renamed to plain
+        byte[] plain = this.decrypt(encapsulation, indcpaPrivateKey, paramsK);
+        int ski = KyberParams.Kyber768SKBytes - 2 * KyberParams.paramsSymBytes;
+        byte[] newBuf = new byte[plain.length + KyberParams.paramsSymBytes];
+        System.arraycopy(plain, 0, newBuf, 0, plain.length);
+        System.arraycopy(privateKey, ski, newBuf, plain.length, KyberParams.paramsSymBytes);
+        MessageDigest md512 = MessageDigest.getInstance("SHA3-512");
+        byte[] kr = md512.digest(newBuf);
+        byte[] subKr = new byte[kr.length - KyberParams.paramsSymBytes];
+        System.arraycopy(kr, KyberParams.paramsSymBytes, subKr, 0, subKr.length);
+        byte[] cmp = this.encrypt(plain, publicKey, subKr, paramsK);
+        byte fail = (byte) this.constantTimeCompare(encapsulation, cmp);
+        // For security purposes, removed the "if" so it behaves the same whether it
+        // worked or not.
+        MessageDigest md = MessageDigest.getInstance("SHA3-256");
+        byte[] krh = md.digest(encapsulation);
+        int index = KyberParams.Kyber768SKBytes - KyberParams.paramsSymBytes;
+        for (int i = 0; i < KyberParams.paramsSymBytes; i++) {
+            kr[i] = (byte) ((int) (kr[i] & 0xFF) ^ ((int) (fail & 0xFF) & ((int) (kr[i] & 0xFF) ^ (int) (privateKey[index] & 0xFF))));
+            index += 1;
+        }
+        byte[] tempBuf = new byte[KyberParams.paramsSymBytes + krh.length];
+        System.arraycopy(kr, 0, tempBuf, 0, KyberParams.paramsSymBytes);
+        System.arraycopy(krh, 0, tempBuf, KyberParams.paramsSymBytes, krh.length);
+        KeccakSponge xof = new Shake256();
+        xof.getAbsorbStream().write(tempBuf);
+        xof.getSqueezeStream().read(sharedSecretFixedLength);
+
+        return new KyberDecrypted(plain, sharedSecretFixedLength);
+    }
+
+    public KyberEncrypted encrypt1024(byte[] variant, byte[] publicKey) throws NoSuchAlgorithmException, InvalidKeyException
+    {
+        variant = verifyVariant(variant);
+        int paramsK = 4;
+        byte[] sharedSecret = new byte[KyberParams.paramsSymBytes];
+        MessageDigest md = MessageDigest.getInstance("SHA3-256");
+        byte[] buf1 = md.digest(variant);
+        byte[] buf2 = md.digest(publicKey);
+        byte[] buf3 = new byte[buf1.length + buf2.length];
+        System.arraycopy(buf1, 0, buf3, 0, buf1.length);
+        System.arraycopy(buf2, 0, buf3, buf1.length, buf2.length);
+        MessageDigest md512 = MessageDigest.getInstance("SHA3-512");
+        byte[] kr = md512.digest(buf3);
+        byte[] subKr = new byte[kr.length - KyberParams.paramsSymBytes];
+        System.arraycopy(kr, KyberParams.paramsSymBytes, subKr, 0, subKr.length);
+        byte[] ciphertext = this.encrypt(buf1, publicKey, subKr, paramsK);
+        byte[] krc = md.digest(ciphertext);
+        byte[] newKr = new byte[KyberParams.paramsSymBytes + krc.length];
+        System.arraycopy(kr, 0, newKr, 0, KyberParams.paramsSymBytes);
+        System.arraycopy(krc, 0, newKr, KyberParams.paramsSymBytes, krc.length);
+        KeccakSponge xof = new Shake256();
+        xof.getAbsorbStream().write(newKr);
+        xof.getSqueezeStream().read(sharedSecret);
+        return new KyberEncrypted(ciphertext, sharedSecret);
+    }
+
+    public KyberDecrypted decrypt1024(byte[] encapsulation, byte[] privateKey) throws Exception
+    {
+        int paramsK = 4;
+        byte[] sharedSecretFixedLength = new byte[KyberParams.KyberSSBytes];
+        byte[] indcpaPrivateKey = new byte[KyberParams.paramsIndcpaSecretKeyBytesK1024];
+        System.arraycopy(privateKey, 0, indcpaPrivateKey, 0, indcpaPrivateKey.length);
+        byte[] publicKey = new byte[KyberParams.paramsIndcpaPublicKeyBytesK1024];
+        System.arraycopy(privateKey, KyberParams.paramsIndcpaSecretKeyBytesK1024, publicKey, 0, publicKey.length);
+
+        //renamed buf to plain
+        byte[] plain = this.decrypt(encapsulation, indcpaPrivateKey, paramsK);
+        int ski = KyberParams.Kyber1024SKBytes - 2 * KyberParams.paramsSymBytes;
+        byte[] newBuf = new byte[plain.length + KyberParams.paramsSymBytes];
+        System.arraycopy(plain, 0, newBuf, 0, plain.length);
+        System.arraycopy(privateKey, ski, newBuf, plain.length, KyberParams.paramsSymBytes);
+        MessageDigest md512 = MessageDigest.getInstance("SHA3-512");
+        byte[] kr = md512.digest(newBuf);
+        byte[] subKr = new byte[kr.length - KyberParams.paramsSymBytes];
+        System.arraycopy(kr, KyberParams.paramsSymBytes, subKr, 0, subKr.length);
+        byte[] cmp = this.encrypt(plain, publicKey, subKr, paramsK);
+        byte fail = (byte) this.constantTimeCompare(encapsulation, cmp);
+        // For security purposes, removed the "if" so it behaves the same whether it
+        // worked or not.
+        MessageDigest md = MessageDigest.getInstance("SHA3-256");
+        byte[] krh = md.digest(encapsulation);
+        int index = KyberParams.Kyber1024SKBytes - KyberParams.paramsSymBytes;
+        for (int i = 0; i < KyberParams.paramsSymBytes; i++)
+        {
+            kr[i] = (byte) ((int) (kr[i] & 0xFF) ^ ((int) (fail & 0xFF) & ((int) (kr[i] & 0xFF) ^ (int) (privateKey[index] & 0xFF))));
+            index += 1;
+        }
+        byte[] tempBuf = new byte[KyberParams.paramsSymBytes + krh.length];
+        System.arraycopy(kr, 0, tempBuf, 0, KyberParams.paramsSymBytes);
+        System.arraycopy(krh, 0, tempBuf, KyberParams.paramsSymBytes, krh.length);
+        KeccakSponge xof = new Shake256();
+        xof.getAbsorbStream().write(tempBuf);
+        xof.getSqueezeStream().read(sharedSecretFixedLength);
+
+        return new KyberDecrypted(plain, sharedSecretFixedLength);
+    }
+
     public byte[] decrypt(byte[] packedCipherText, byte[] privateKey, int paramsK) {
         UnpackedCipherText unpackedCipherText = unpackCiphertext(packedCipherText, paramsK);
         short[][] bp = unpackedCipherText.getBp();
@@ -91,14 +224,14 @@ public class KyberAlgorithm
         byte[] bpc;
         byte[] vc;
         switch (paramsK) {
-            case 2: default:
+            case 2:
                 bpc = new byte[KyberParams.paramsPolyvecCompressedBytesK512];
                 break;
-//            case 3:
-//                bpc = new byte[com.swiftcryptollc.crypto.provider.kyber.KyberParams.paramsPolyvecCompressedBytesK768];
-//                break;
-//            default:
-//                bpc = new byte[com.swiftcryptollc.crypto.provider.kyber.KyberParams.paramsPolyvecCompressedBytesK1024];
+            case 3:
+                bpc = new byte[KyberParams.paramsPolyvecCompressedBytesK768];
+                break;
+            default:
+                bpc = new byte[KyberParams.paramsPolyvecCompressedBytesK1024];
         }
         System.arraycopy(c, 0, bpc, 0, bpc.length);
         vc = new byte[c.length - bpc.length];
@@ -151,13 +284,13 @@ public class KyberAlgorithm
                 unpackedKey.setPublicKeyPolyvec(Poly.polyVectorFromBytes(Arrays.copyOfRange(packedPublicKey, 0, KyberParams.paramsPolyvecBytesK512), paramsK));
                 unpackedKey.setSeed(Arrays.copyOfRange(packedPublicKey, KyberParams.paramsPolyvecBytesK512, packedPublicKey.length));
                 break;
-//            case 3:
-//                unpackedKey.setPublicKeyPolyvec(Poly.polyVectorFromBytes(Arrays.copyOfRange(packedPublicKey, 0, com.swiftcryptollc.crypto.provider.kyber.KyberParams.paramsPolyvecBytesK768), paramsK));
-//                unpackedKey.setSeed(Arrays.copyOfRange(packedPublicKey, com.swiftcryptollc.crypto.provider.kyber.KyberParams.paramsPolyvecBytesK768, packedPublicKey.length));
-//                break;
-//            default:
-//                unpackedKey.setPublicKeyPolyvec(Poly.polyVectorFromBytes(Arrays.copyOfRange(packedPublicKey, 0, com.swiftcryptollc.crypto.provider.kyber.KyberParams.paramsPolyvecBytesK1024), paramsK));
-//                unpackedKey.setSeed(Arrays.copyOfRange(packedPublicKey, com.swiftcryptollc.crypto.provider.kyber.KyberParams.paramsPolyvecBytesK1024, packedPublicKey.length));
+            case 3:
+                unpackedKey.setPublicKeyPolyvec(Poly.polyVectorFromBytes(Arrays.copyOfRange(packedPublicKey, 0, KyberParams.paramsPolyvecBytesK768), paramsK));
+                unpackedKey.setSeed(Arrays.copyOfRange(packedPublicKey, KyberParams.paramsPolyvecBytesK768, packedPublicKey.length));
+                break;
+            default:
+                unpackedKey.setPublicKeyPolyvec(Poly.polyVectorFromBytes(Arrays.copyOfRange(packedPublicKey, 0, KyberParams.paramsPolyvecBytesK1024), paramsK));
+                unpackedKey.setSeed(Arrays.copyOfRange(packedPublicKey, KyberParams.paramsPolyvecBytesK1024, packedPublicKey.length));
         }
         return unpackedKey;
     }

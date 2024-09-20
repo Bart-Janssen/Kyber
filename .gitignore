@@ -4,3 +4,4 @@
 *.MF
 .idea
 /target
+*.key

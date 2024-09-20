@@ -6,16 +6,18 @@ public class Kyber
     {
         try
         {
-            Server server = new JCEServer();
+            Server server = new KeyServer(768, false, true);
+//            Server server = new JCEServer(768);
 
-            Client client = new JCEClient();
+
+            Client client = new JCEClient(768);
             client.setServerPublic(server.getPublic());
 
             byte[] encapsulation = client.encapsulate();
 
             //Send encapsulation over insecure network to server
             System.out.print("[Network] : Encapsulated secret: " + encapsulation.length + " | ");print(encapsulation);
-
+            
             server.decapsulate(encapsulation);
 
             //Secret is now shared
