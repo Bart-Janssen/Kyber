@@ -1,5 +1,6 @@
-package Kyber.Algorithm;
+package Kyber.Reference;
 
+import Kyber.Models.KyberParams;
 import com.github.aelstad.keccakj.core.KeccakSponge;
 import com.github.aelstad.keccakj.fips202.Shake256;
 

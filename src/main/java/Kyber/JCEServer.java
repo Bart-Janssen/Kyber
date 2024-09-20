@@ -1,6 +1,6 @@
 package Kyber;
 
-import Kyber.Algorithm.KeyPair;
+import Kyber.Models.KeyPair;
 
 public class JCEServer extends Server
 {

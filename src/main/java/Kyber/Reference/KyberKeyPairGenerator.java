@@ -1,5 +1,8 @@
-package Kyber.Algorithm;
+package Kyber.Reference;
 
+import Kyber.Models.KeyPair;
+import Kyber.Models.KyberParams;
+import Kyber.Models.KyberUniformRandom;
 import com.github.aelstad.keccakj.core.KeccakSponge;
 import com.github.aelstad.keccakj.fips202.Shake128;
 

@@ -1,4 +1,4 @@
-package Kyber.Algorithm;
+package Kyber.Models;
 
 public class KyberUniformRandom
 {

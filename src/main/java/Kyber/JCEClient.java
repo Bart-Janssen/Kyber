@@ -1,6 +1,6 @@
 package Kyber;
 
-import Kyber.Algorithm.KyberEncrypted;
+import Kyber.Models.KyberEncrypted;
 
 public class JCEClient extends Client
 {

@@ -1,4 +1,4 @@
-package Kyber.Algorithm;
+package Kyber.Models;
 
 public class UnpackedPublicKey
 {
@@ -9,7 +9,7 @@ public class UnpackedPublicKey
         return publicKeyPolyvec;
     }
 
-    protected void setPublicKeyPolyvec(short[][] publicKeyPolyvec) {
+    public void setPublicKeyPolyvec(short[][] publicKeyPolyvec) {
         this.publicKeyPolyvec = publicKeyPolyvec;
     }
 
@@ -17,7 +17,7 @@ public class UnpackedPublicKey
         return seed;
     }
 
-    protected void setSeed(byte[] seed) {
+    public void setSeed(byte[] seed) {
         this.seed = seed;
     }
 }

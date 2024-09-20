@@ -1,4 +1,4 @@
-package Kyber.Algorithm;
+package Kyber.Models;
 
 public class UnpackedCipherText
 {
@@ -9,7 +9,7 @@ public class UnpackedCipherText
         return bp;
     }
 
-    protected void setBp(short[][] bp) {
+    public void setBp(short[][] bp) {
         this.bp = bp;
     }
 
@@ -17,7 +17,7 @@ public class UnpackedCipherText
         return v;
     }
 
-    protected void setV(short[] v) {
+    public void setV(short[] v) {
         this.v = v;
     }
 }

@@ -1,6 +1,6 @@
 package Kyber;
 
-import Kyber.Algorithm.KeyPair;
+import Kyber.Models.KeyPair;
 import Kyber.smartcard.KeyAppletSmartCard;
 import javax.smartcardio.Card;
 import javax.smartcardio.CardTerminal;

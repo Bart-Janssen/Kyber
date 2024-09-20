@@ -17,7 +17,9 @@ public class Kyber
 
             //Send encapsulation over insecure network to server
             System.out.print("[Network] : Encapsulated secret: " + encapsulation.length + " | ");print(encapsulation);
-            
+
+//            new BufferedReader(new InputStreamReader(System.in)).readLine();
+
             server.decapsulate(encapsulation);
 
             //Secret is now shared
