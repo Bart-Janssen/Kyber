@@ -2,7 +2,9 @@ package Kyber;
 
 import Kyber.Models.KeyPair;
 import Kyber.Models.KyberEncrypted;
-import Kyber.Reference.*;
+import Kyber.Implementation.Reference.KyberAlgorithm;
+import Kyber.Implementation.Reference.KyberKeyPairGenerator;
+
 import java.security.SecureRandom;
 
 public class KyberService

@@ -6,11 +6,11 @@ public class Kyber
     {
         try
         {
-            Server server = new KeyServer(768, false, true);
+            Server server = new KeyServer(1024, false, false);
 //            Server server = new JCEServer(768);
 
 
-            Client client = new JCEClient(768);
+            Client client = new JCEClient(1024);
             client.setServerPublic(server.getPublic());
 
             byte[] encapsulation = client.encapsulate();

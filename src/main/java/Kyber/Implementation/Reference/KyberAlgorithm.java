@@ -1,4 +1,4 @@
-package Kyber.Reference;
+package Kyber.Implementation.Reference;
 
 import Kyber.Models.*;
 import com.github.aelstad.keccakj.core.KeccakSponge;
