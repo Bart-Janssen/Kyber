@@ -5,8 +5,12 @@ public abstract class Server
     protected byte[] privateKey;
     protected byte[] publicKey;
     protected byte[] aesKey;
+    protected int mode;
 
-    int mode;
+    protected Server(int mode)
+    {
+        this.mode = mode;
+    }
 
     public abstract byte[] getPublic();
     public abstract void decapsulate(byte[] encapsulation) throws Exception;

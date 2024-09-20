@@ -21,6 +21,14 @@ public abstract class SmartCard
         this.showSmartCardLogging = showSmartCardLogging;
     }
 
+    protected void selectApplet(byte[] aid) throws Exception
+    {
+        CommandAPDU command = new APDU(0x00,0xA4,0x04,0x00, aid, 0x00).create();
+        ResponseAPDU response = this.transmit(command);
+        if (this.showSmartCardLogging) {System.out.print("Command:  "); this.print(command.getBytes());}
+        if (this.showSmartCardLogging) {System.out.print("Response: "); this.print(response.getBytes());}
+    }
+
     protected ResponseAPDU transmit(CommandAPDU apdu) throws Exception
     {
         CardChannel channel = this.card.getBasicChannel();

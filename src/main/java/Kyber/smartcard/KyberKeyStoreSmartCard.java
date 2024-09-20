@@ -4,26 +4,23 @@ import javax.smartcardio.Card;
 import javax.smartcardio.CommandAPDU;
 import javax.smartcardio.ResponseAPDU;
 
-public class KeyAppletSmartCard extends SmartCard
+public class KyberKeyStoreSmartCard extends SmartCard
 {
-    private final byte[] pqcKeyStoreApplet = new byte[]{(byte)0x50,(byte)0x51,(byte)0x43,(byte)0x20,(byte)0x4B,(byte)0x65,(byte)0x79,(byte)0x73,(byte)0x74,(byte)0x6F,(byte)0x72,(byte)0x65};
+    private final byte[] kyberKeyStoreAppletAID = new byte[]{(byte)0x50,(byte)0x51,(byte)0x43,(byte)0x20,(byte)0x4B,(byte)0x65,(byte)0x79,(byte)0x73,(byte)0x74,(byte)0x6F,(byte)0x72,(byte)0x65};
 
-    public KeyAppletSmartCard(int mode, Card card, boolean showSmartCardLogging)
+    public KyberKeyStoreSmartCard(int mode, Card card, boolean showSmartCardLogging)
     {
         super(mode, card, showSmartCardLogging);
     }
 
-    public void selectPQCApplet() throws Exception
+    public void selectKyberKeyStoreApplet() throws Exception
     {
-        CommandAPDU command = new APDU(0x00,0xA4,0x04,0x00, this.pqcKeyStoreApplet, 0x00).create();
-        ResponseAPDU response = super.transmit(command);
-        if (super.showSmartCardLogging) {System.out.print("Command:  "); super.print(command.getBytes());}
-        if (super.showSmartCardLogging) {System.out.print("Response: "); super.print(response.getBytes());}
+        super.selectApplet(this.kyberKeyStoreAppletAID);
     }
 
-    public void storePrivateKey(byte[] privateKey) throws Exception
+    public void storeKyberPrivateKey(byte[] privateKey) throws Exception
     {
-        //Set size
+        //Set private key size
         {
             byte[] privateKeySize = new byte[2];
             privateKeySize[0] = (byte)((super.keySize>>8)&0xFF);
@@ -52,7 +49,7 @@ public class KeyAppletSmartCard extends SmartCard
 
     public byte[] obtainPrivateKey() throws Exception
     {
-        //Check size
+        //Check private key size
         {
             byte[] privateKeySize = new byte[2];
             privateKeySize[0] = (byte)((super.keySize>>8)&0xFF);
@@ -80,12 +77,4 @@ public class KeyAppletSmartCard extends SmartCard
         while (response.getSW() == 0x5000);
         return privateKey;
     }
-//
-//    public void storeSharedSecret() throws Exception
-//    {
-//        CommandAPDU command = new APDU(0x00,0x00,0x00,0xB2,0x00).create();
-//        ResponseAPDU response = super.transmit(command);
-//        System.out.print("Command:  "); super.print(command.getBytes());
-//        System.out.print("Response: "); super.print(response.getBytes());
-//    }
 }

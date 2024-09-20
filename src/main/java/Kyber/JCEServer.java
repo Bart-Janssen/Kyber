@@ -1,13 +1,14 @@
 package Kyber;
 
 import Kyber.Models.KeyPair;
+import Kyber.service.KyberReferenceService;
 
 public class JCEServer extends Server
 {
     public JCEServer(int mode) throws Exception
     {
-        super.mode = mode;
-        KeyPair keyPair = new KyberService().generateKeys(super.mode);
+        super(mode);
+        KeyPair keyPair = new KyberReferenceService().generateKeys(super.mode);
         super.privateKey = keyPair.getPrivateKey();
         super.publicKey = keyPair.getPublicKey();
         System.out.print("[Server]  : Public Key length: " + super.publicKey.length + " | ");super.print(super.publicKey);
@@ -17,7 +18,7 @@ public class JCEServer extends Server
     @Override
     public void decapsulate(byte[] encapsulation) throws Exception
     {
-        super.aesKey = new KyberService().decapsulate(super.mode, super.privateKey, encapsulation);
+        super.aesKey = new KyberReferenceService().decapsulate(super.mode, super.privateKey, encapsulation);
         System.out.print("[Server]  : Decapsulated secret: " + super.aesKey.length + " | ");super.print(super.aesKey);
     }
 

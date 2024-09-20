@@ -1,7 +1,8 @@
 package Kyber;
 
 import Kyber.Models.KeyPair;
-import Kyber.smartcard.KeyAppletSmartCard;
+import Kyber.service.KyberReferenceService;
+import Kyber.smartcard.KyberKeyStoreSmartCard;
 import javax.smartcardio.Card;
 import javax.smartcardio.CardTerminal;
 import javax.smartcardio.TerminalFactory;
@@ -13,17 +14,17 @@ import java.util.List;
 
 public class KeyServer extends Server
 {
-    private KeyAppletSmartCard smartCard;
+    private KyberKeyStoreSmartCard smartCard;
 
     public KeyServer(int mode, boolean reUpdate, boolean showSmartCardLogging) throws Exception
     {
-        super.mode = mode;
+        super(mode);
         this.connectSmartCard(showSmartCardLogging);
 
         final String publicKeyFile1 = "public.key";
         if (reUpdate)
         {
-            KeyPair keyPair = new KyberService().generateKeys(super.mode);
+            KeyPair keyPair = new KyberReferenceService().generateKeys(super.mode);
             //Explicitly not using super.privateKey.
             byte[] privateKey = keyPair.getPrivateKey();
             super.publicKey = keyPair.getPublicKey();
@@ -36,7 +37,7 @@ public class KeyServer extends Server
             }
             System.out.print("[Server]  : Public Key length: " + super.publicKey.length + " | ");super.print(super.publicKey);
             System.out.print("[Server]  : Private Key length: " + privateKey.length + " | ");super.print(privateKey);
-            this.smartCard.storePrivateKey(privateKey);
+            this.smartCard.storeKyberPrivateKey(privateKey);
             //writing random data to private key variable in memory
             new SecureRandom().nextBytes(privateKey);
         }
@@ -58,8 +59,8 @@ public class KeyServer extends Server
         {
             List<CardTerminal> readers = TerminalFactory.getDefault().terminals().list();
             Card card = readers.get(0).connect("T=1");
-            this.smartCard = new KeyAppletSmartCard(super.mode, card, showSmartCardLogging);
-            this.smartCard.selectPQCApplet();
+            this.smartCard = new KyberKeyStoreSmartCard(super.mode, card, showSmartCardLogging);
+            this.smartCard.selectKyberKeyStoreApplet();
         }
         catch (Exception e)
         {
@@ -76,7 +77,7 @@ public class KeyServer extends Server
     @Override
     public void decapsulate(byte[] encapsulation) throws Exception
     {
-        super.aesKey = new KyberService().decapsulate(super.mode, this.smartCard.obtainPrivateKey(), encapsulation);
+        super.aesKey = new KyberReferenceService().decapsulate(super.mode, this.smartCard.obtainPrivateKey(), encapsulation);
         System.out.print("[Server]  : Decapsulated secret: " + super.aesKey.length + " | ");super.print(super.aesKey);
     }
 }
