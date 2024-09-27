@@ -1,6 +1,7 @@
 package Kyber;
 
-import Kyber.smartcard.KyberKeyStoreSmartCard;
+import Kyber.Models.KeyPair;
+import Kyber.service.KyberSmartCardService;
 import Kyber.smartcard.KyberSmartCard;
 
 import javax.smartcardio.Card;
@@ -16,6 +17,12 @@ public class SmartCardServer extends Server
     {
         super(mode);
         this.connectSmartCard(showSmartCardLogging);
+
+        KeyPair keyPair = new KyberSmartCardService().generateKeys(super.mode);
+        super.privateKey = keyPair.getPrivateKey();
+        super.publicKey = keyPair.getPublicKey();
+        System.out.print("[Server]  : Public Key length: " + super.publicKey.length + " | ");super.print(super.publicKey);
+        System.out.print("[Server]  : Private Key length: " + super.privateKey.length + " | ");super.print(super.privateKey);
     }
 
     private void connectSmartCard(boolean showSmartCardLogging)
@@ -36,7 +43,8 @@ public class SmartCardServer extends Server
     @Override
     public void decapsulate(byte[] encapsulation) throws Exception
     {
-
+        super.aesKey = new KyberSmartCardService().decapsulate(super.mode, super.privateKey, encapsulation);
+        System.out.print("[Server]  : Decapsulated secret: " + super.aesKey.length + " | ");super.print(super.aesKey);
     }
 
     @Override

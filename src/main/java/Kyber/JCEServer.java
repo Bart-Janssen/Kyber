@@ -1,7 +1,6 @@
 package Kyber;
 
 import Kyber.Models.KeyPair;
-import Kyber.service.KyberReferenceService;
 import Kyber.service.KyberSmartCardService;
 
 public class JCEServer extends Server
