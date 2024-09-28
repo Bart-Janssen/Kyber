@@ -7,10 +7,11 @@ public class Kyber
         try
         {
 //            Server server = new KeyServer(512, true, true);
-            Server server = new JCEServer(512);
+//            Server server = new JCEServer(512);
+            Server server = new SmartCardServer(768, true);
 
 
-            Client client = new JCEClient(512);
+            Client client = new JCEClient(768);
             client.setServerPublic(server.getPublic());
 
             byte[] encapsulation = client.encapsulate();
