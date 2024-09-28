@@ -1,7 +1,7 @@
 package Kyber.service;
 
-import Kyber.Implementation.Reference.KyberAlgorithm;
-import Kyber.Implementation.Reference.KyberKeyPairGenerator;
+import Kyber.Implementation.SmartCard.KyberAlgorithm;
+import Kyber.Implementation.SmartCard.KyberKeyPairGenerator;
 import Kyber.Models.KeyPair;
 import Kyber.Models.KyberEncrypted;
 import java.security.SecureRandom;

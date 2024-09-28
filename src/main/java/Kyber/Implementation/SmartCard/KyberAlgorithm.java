@@ -1,64 +1,78 @@
 package Kyber.Implementation.SmartCard;
 
 import Kyber.Models.*;
-import com.github.aelstad.keccakj.core.KeccakSponge;
-import com.github.aelstad.keccakj.fips202.Shake128;
-import com.github.aelstad.keccakj.fips202.Shake256;
-
-import java.security.MessageDigest;
 import java.util.Arrays;
 
 public class KyberAlgorithm
 {
     public KyberEncrypted encrypt512(byte[] variant, byte[] publicKey) throws Exception
     {
+        Keccak keccak;
         variant = verifyVariant(variant);
         int paramsK = 2;
         byte[] sharedSecret = new byte[KyberParams.paramsSymBytes];
-        MessageDigest md = MessageDigest.getInstance("SHA3-256");
-        byte[] buf1 = md.digest(variant);
-        byte[] buf2 = md.digest(publicKey);
+        keccak = Keccak.getInstance(Keccak.ALG_SHA3_256);
+        byte[] buf1 = new byte[32];
+        keccak.doFinal(variant, buf1);
+        byte[] buf2 = new byte[32];
+        keccak.doFinal(publicKey, buf2);
         byte[] buf3 = new byte[buf1.length + buf2.length];
         System.arraycopy(buf1, 0, buf3, 0, buf1.length);
         System.arraycopy(buf2, 0, buf3, buf1.length, buf2.length);
-        MessageDigest md512 = MessageDigest.getInstance("SHA3-512");
-        byte[] kr = md512.digest(buf3);
+        keccak = Keccak.getInstance(Keccak.ALG_SHA3_512);
+        byte[] kr = new byte[64];
+        keccak.doFinal(buf3, kr);
         byte[] subKr = new byte[kr.length - KyberParams.paramsSymBytes];
         System.arraycopy(kr, KyberParams.paramsSymBytes, subKr, 0, subKr.length);
         byte[] ciphertext = this.encrypt(buf1, publicKey, subKr, paramsK);
-        byte[] krc = md.digest(ciphertext);
+        keccak = Keccak.getInstance(Keccak.ALG_SHA3_256);
+        byte[] krc = new byte[32];
+        keccak.doFinal(ciphertext, krc);
         byte[] newKr = new byte[KyberParams.paramsSymBytes + krc.length];
         System.arraycopy(kr, 0, newKr, 0, KyberParams.paramsSymBytes);
         System.arraycopy(krc, 0, newKr, KyberParams.paramsSymBytes, krc.length);
-        KeccakSponge xof = new Shake256();
-        xof.getAbsorbStream().write(newKr);
-        xof.getSqueezeStream().read(sharedSecret);
+        keccak = Keccak.getInstance(Keccak.ALG_SHAKE_256);
+        keccak.setShakeDigestLength((short)32);
+        keccak.doFinal(newKr, sharedSecret);
         return new KyberEncrypted(ciphertext, sharedSecret);
+    }
+
+    protected void print(byte[] data)
+    {
+        StringBuilder sb = new StringBuilder();
+        for (byte b : data)
+        {
+            sb.append(String.format("%02X ", b));
+        }
+        System.out.print(sb);
+        System.out.println();
     }
 
     public KyberDecrypted decrypt512(byte[] ciphertext, byte[] privateKey) throws Exception
     {
+        Keccak keccak;
         int paramsK = 2;
         byte[] sharedSecretFixedLength = new byte[KyberParams.KyberSSBytes];
         byte[] indcpaPrivateKey = new byte[KyberParams.paramsIndcpaSecretKeyBytesK512];
         System.arraycopy(privateKey, 0, indcpaPrivateKey, 0, indcpaPrivateKey.length);
         byte[] publicKey = new byte[KyberParams.paramsIndcpaPublicKeyBytesK512];
         System.arraycopy(privateKey, KyberParams.paramsIndcpaSecretKeyBytesK512, publicKey, 0, publicKey.length);
-
         //buf renamed to plain
         byte[] plain = this.decrypt(ciphertext, indcpaPrivateKey, paramsK);
         int ski = KyberParams.Kyber512SKBytes - 2 * KyberParams.paramsSymBytes;
         byte[] newBuf = new byte[plain.length + KyberParams.paramsSymBytes];
         System.arraycopy(plain, 0, newBuf, 0, plain.length);
         System.arraycopy(privateKey, ski, newBuf, plain.length, KyberParams.paramsSymBytes);
-        MessageDigest md512 = MessageDigest.getInstance("SHA3-512");
-        byte[] kr = md512.digest(newBuf);
+        keccak = Keccak.getInstance(Keccak.ALG_SHA3_512);
+        byte[] kr = new byte[64];
+        keccak.doFinal(newBuf, kr);
         byte[] subKr = new byte[kr.length - KyberParams.paramsSymBytes];
         System.arraycopy(kr, KyberParams.paramsSymBytes, subKr, 0, subKr.length);
         byte[] cmp = this.encrypt(plain, publicKey, subKr, paramsK);
         byte fail = (byte) this.constantTimeCompare(ciphertext, cmp);
-        MessageDigest md = MessageDigest.getInstance("SHA3-256");
-        byte[] krh = md.digest(ciphertext);
+        keccak = Keccak.getInstance(Keccak.ALG_SHA3_256);
+        byte[] krh = new byte[32];
+        keccak.doFinal(ciphertext, krh);
         int index = KyberParams.Kyber512SKBytes - KyberParams.paramsSymBytes;
         for (int i = 0; i < KyberParams.paramsSymBytes; i++)
         {
@@ -68,41 +82,47 @@ public class KyberAlgorithm
         byte[] tempBuf = new byte[KyberParams.paramsSymBytes + krh.length];
         System.arraycopy(kr, 0, tempBuf, 0, KyberParams.paramsSymBytes);
         System.arraycopy(krh, 0, tempBuf, KyberParams.paramsSymBytes, krh.length);
-        KeccakSponge xof = new Shake256();
-        xof.getAbsorbStream().write(tempBuf);
-        xof.getSqueezeStream().read(sharedSecretFixedLength);
-
+        keccak = Keccak.getInstance(Keccak.ALG_SHAKE_256);
+        keccak.setShakeDigestLength((short)32);
+        keccak.doFinal(tempBuf, sharedSecretFixedLength);
         return new KyberDecrypted(plain, sharedSecretFixedLength);
     }
 
     public KyberEncrypted encrypt768(byte[] variant, byte[] publicKey) throws Exception
     {
+        Keccak keccak;
         variant = verifyVariant(variant);
         int paramsK = 3;
         byte[] sharedSecret = new byte[KyberParams.paramsSymBytes];
-        MessageDigest md = MessageDigest.getInstance("SHA3-256");
-        byte[] buf1 = md.digest(variant);
-        byte[] buf2 = md.digest(publicKey);
+        keccak = Keccak.getInstance(Keccak.ALG_SHA3_256);
+        byte[] buf1 = new byte[32];
+        keccak.doFinal(variant, buf1);
+        byte[] buf2 = new byte[32];
+        keccak.doFinal(publicKey, buf2);
         byte[] buf3 = new byte[buf1.length + buf2.length];
         System.arraycopy(buf1, 0, buf3, 0, buf1.length);
         System.arraycopy(buf2, 0, buf3, buf1.length, buf2.length);
-        MessageDigest md512 = MessageDigest.getInstance("SHA3-512");
-        byte[] kr = md512.digest(buf3);
+        keccak = Keccak.getInstance(Keccak.ALG_SHA3_512);
+        byte[] kr = new byte[64];
+        keccak.doFinal(buf3, kr);
         byte[] subKr = new byte[kr.length - KyberParams.paramsSymBytes];
         System.arraycopy(kr, KyberParams.paramsSymBytes, subKr, 0, subKr.length);
         byte[] ciphertext = this.encrypt(buf1, publicKey, subKr, paramsK);
-        byte[] krc = md.digest(ciphertext);
+        keccak = Keccak.getInstance(Keccak.ALG_SHA3_256);
+        byte[] krc = new byte[32];
+        keccak.doFinal(ciphertext, krc);
         byte[] newKr = new byte[KyberParams.paramsSymBytes + krc.length];
         System.arraycopy(kr, 0, newKr, 0, KyberParams.paramsSymBytes);
         System.arraycopy(krc, 0, newKr, KyberParams.paramsSymBytes, krc.length);
-        KeccakSponge xof = new Shake256();
-        xof.getAbsorbStream().write(newKr);
-        xof.getSqueezeStream().read(sharedSecret);
+        keccak = Keccak.getInstance(Keccak.ALG_SHAKE_256);
+        keccak.setShakeDigestLength((short)32);
+        keccak.doFinal(newKr, sharedSecret);
         return new KyberEncrypted(ciphertext, sharedSecret);
     }
 
     public KyberDecrypted decrypt768(byte[] encapsulation, byte[] privateKey) throws Exception
     {
+        Keccak keccak;
         int paramsK = 3;
         byte[] sharedSecretFixedLength = new byte[KyberParams.KyberSSBytes];
         byte[] indcpaPrivateKey = new byte[KyberParams.paramsIndcpaSecretKeyBytesK768];
@@ -116,16 +136,18 @@ public class KyberAlgorithm
         byte[] newBuf = new byte[plain.length + KyberParams.paramsSymBytes];
         System.arraycopy(plain, 0, newBuf, 0, plain.length);
         System.arraycopy(privateKey, ski, newBuf, plain.length, KyberParams.paramsSymBytes);
-        MessageDigest md512 = MessageDigest.getInstance("SHA3-512");
-        byte[] kr = md512.digest(newBuf);
+        keccak = Keccak.getInstance(Keccak.ALG_SHA3_512);
+        byte[] kr = new byte[64];
+        keccak.doFinal(newBuf, kr);
         byte[] subKr = new byte[kr.length - KyberParams.paramsSymBytes];
         System.arraycopy(kr, KyberParams.paramsSymBytes, subKr, 0, subKr.length);
         byte[] cmp = this.encrypt(plain, publicKey, subKr, paramsK);
         byte fail = (byte) this.constantTimeCompare(encapsulation, cmp);
         // For security purposes, removed the "if" so it behaves the same whether it
         // worked or not.
-        MessageDigest md = MessageDigest.getInstance("SHA3-256");
-        byte[] krh = md.digest(encapsulation);
+        keccak = Keccak.getInstance(Keccak.ALG_SHA3_256);
+        byte[] krh = new byte[32];
+        keccak.doFinal(encapsulation, krh);
         int index = KyberParams.Kyber768SKBytes - KyberParams.paramsSymBytes;
         for (int i = 0; i < KyberParams.paramsSymBytes; i++)
         {
@@ -135,41 +157,47 @@ public class KyberAlgorithm
         byte[] tempBuf = new byte[KyberParams.paramsSymBytes + krh.length];
         System.arraycopy(kr, 0, tempBuf, 0, KyberParams.paramsSymBytes);
         System.arraycopy(krh, 0, tempBuf, KyberParams.paramsSymBytes, krh.length);
-        KeccakSponge xof = new Shake256();
-        xof.getAbsorbStream().write(tempBuf);
-        xof.getSqueezeStream().read(sharedSecretFixedLength);
-
+        keccak = Keccak.getInstance(Keccak.ALG_SHAKE_256);
+        keccak.setShakeDigestLength((short)32);
+        keccak.doFinal(tempBuf, sharedSecretFixedLength);
         return new KyberDecrypted(plain, sharedSecretFixedLength);
     }
 
     public KyberEncrypted encrypt1024(byte[] variant, byte[] publicKey) throws Exception
     {
+        Keccak keccak;
         variant = verifyVariant(variant);
         int paramsK = 4;
         byte[] sharedSecret = new byte[KyberParams.paramsSymBytes];
-        MessageDigest md = MessageDigest.getInstance("SHA3-256");
-        byte[] buf1 = md.digest(variant);
-        byte[] buf2 = md.digest(publicKey);
+        keccak = Keccak.getInstance(Keccak.ALG_SHA3_256);
+        byte[] buf1 = new byte[32];
+        keccak.doFinal(variant, buf1);
+        byte[] buf2 = new byte[32];
+        keccak.doFinal(publicKey, buf2);
         byte[] buf3 = new byte[buf1.length + buf2.length];
         System.arraycopy(buf1, 0, buf3, 0, buf1.length);
         System.arraycopy(buf2, 0, buf3, buf1.length, buf2.length);
-        MessageDigest md512 = MessageDigest.getInstance("SHA3-512");
-        byte[] kr = md512.digest(buf3);
+        keccak = Keccak.getInstance(Keccak.ALG_SHA3_512);
+        byte[] kr = new byte[64];
+        keccak.doFinal(buf3, kr);
         byte[] subKr = new byte[kr.length - KyberParams.paramsSymBytes];
         System.arraycopy(kr, KyberParams.paramsSymBytes, subKr, 0, subKr.length);
         byte[] ciphertext = this.encrypt(buf1, publicKey, subKr, paramsK);
-        byte[] krc = md.digest(ciphertext);
+        keccak = Keccak.getInstance(Keccak.ALG_SHA3_256);
+        byte[] krc = new byte[32];
+        keccak.doFinal(ciphertext, krc);
         byte[] newKr = new byte[KyberParams.paramsSymBytes + krc.length];
         System.arraycopy(kr, 0, newKr, 0, KyberParams.paramsSymBytes);
         System.arraycopy(krc, 0, newKr, KyberParams.paramsSymBytes, krc.length);
-        KeccakSponge xof = new Shake256();
-        xof.getAbsorbStream().write(newKr);
-        xof.getSqueezeStream().read(sharedSecret);
+        keccak = Keccak.getInstance(Keccak.ALG_SHAKE_256);
+        keccak.setShakeDigestLength((short)32);
+        keccak.doFinal(newKr, sharedSecret);
         return new KyberEncrypted(ciphertext, sharedSecret);
     }
 
     public KyberDecrypted decrypt1024(byte[] encapsulation, byte[] privateKey) throws Exception
     {
+        Keccak keccak;
         int paramsK = 4;
         byte[] sharedSecretFixedLength = new byte[KyberParams.KyberSSBytes];
         byte[] indcpaPrivateKey = new byte[KyberParams.paramsIndcpaSecretKeyBytesK1024];
@@ -183,16 +211,18 @@ public class KyberAlgorithm
         byte[] newBuf = new byte[plain.length + KyberParams.paramsSymBytes];
         System.arraycopy(plain, 0, newBuf, 0, plain.length);
         System.arraycopy(privateKey, ski, newBuf, plain.length, KyberParams.paramsSymBytes);
-        MessageDigest md512 = MessageDigest.getInstance("SHA3-512");
-        byte[] kr = md512.digest(newBuf);
+        keccak = Keccak.getInstance(Keccak.ALG_SHA3_512);
+        byte[] kr = new byte[64];
+        keccak.doFinal(newBuf, kr);
         byte[] subKr = new byte[kr.length - KyberParams.paramsSymBytes];
         System.arraycopy(kr, KyberParams.paramsSymBytes, subKr, 0, subKr.length);
         byte[] cmp = this.encrypt(plain, publicKey, subKr, paramsK);
         byte fail = (byte) this.constantTimeCompare(encapsulation, cmp);
         // For security purposes, removed the "if" so it behaves the same whether it
         // worked or not.
-        MessageDigest md = MessageDigest.getInstance("SHA3-256");
-        byte[] krh = md.digest(encapsulation);
+        keccak = Keccak.getInstance(Keccak.ALG_SHA3_256);
+        byte[] krh = new byte[32];
+        keccak.doFinal(encapsulation, krh);
         int index = KyberParams.Kyber1024SKBytes - KyberParams.paramsSymBytes;
         for (int i = 0; i < KyberParams.paramsSymBytes; i++)
         {
@@ -202,10 +232,9 @@ public class KyberAlgorithm
         byte[] tempBuf = new byte[KyberParams.paramsSymBytes + krh.length];
         System.arraycopy(kr, 0, tempBuf, 0, KyberParams.paramsSymBytes);
         System.arraycopy(krh, 0, tempBuf, KyberParams.paramsSymBytes, krh.length);
-        KeccakSponge xof = new Shake256();
-        xof.getAbsorbStream().write(tempBuf);
-        xof.getSqueezeStream().read(sharedSecretFixedLength);
-
+        keccak = Keccak.getInstance(Keccak.ALG_SHAKE_256);
+        keccak.setShakeDigestLength((short)32);
+        keccak.doFinal(tempBuf, sharedSecretFixedLength);
         return new KyberDecrypted(plain, sharedSecretFixedLength);
     }
 
@@ -306,19 +335,17 @@ public class KyberAlgorithm
         return unpackedKey;
     }
 
-    public static short[][][] generateMatrix(byte[] seed, boolean transposed, int paramsK)
+    public short[][][] generateMatrix(byte[] seed, boolean transposed, int paramsK)
     {
         short[][][] r = new short[paramsK][paramsK][KyberParams.paramsPolyBytes];
         byte[] buf = new byte[672];
         KyberUniformRandom uniformRandom = new KyberUniformRandom();
-        KeccakSponge xof = new Shake128();
+        Keccak keccak = Keccak.getInstance(Keccak.ALG_SHAKE_128);
         for (int i = 0; i < paramsK; i++)
         {
             r[i] = Poly.generateNewPolyVector(paramsK);
             for (int j = 0; j < paramsK; j++)
             {
-                xof.reset();
-                xof.getAbsorbStream().write(seed);
                 byte[] ij = new byte[2];
                 if (transposed)
                 {
@@ -330,8 +357,12 @@ public class KyberAlgorithm
                     ij[0] = (byte) j;
                     ij[1] = (byte) i;
                 }
-                xof.getAbsorbStream().write(ij);
-                xof.getSqueezeStream().read(buf);
+                byte[] seedAndij = new byte[seed.length + ij.length];
+                System.arraycopy(seed, 0, seedAndij, 0, seed.length);
+                System.arraycopy(ij, 0, seedAndij, seed.length, ij.length);
+                keccak.reset();
+                keccak.setShakeDigestLength((short)buf.length);
+                keccak.doFinal(seedAndij, buf);
                 generateUniform(uniformRandom, Arrays.copyOfRange(buf, 0, 504), 504, KyberParams.paramsN);
                 int ui = uniformRandom.getUniformI();
                 r[i][j] = uniformRandom.getUniformR();

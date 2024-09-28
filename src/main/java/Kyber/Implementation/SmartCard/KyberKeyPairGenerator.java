@@ -3,10 +3,6 @@ package Kyber.Implementation.SmartCard;
 import Kyber.Models.KeyPair;
 import Kyber.Models.KyberParams;
 import Kyber.Models.KyberUniformRandom;
-import com.github.aelstad.keccakj.core.KeccakSponge;
-import com.github.aelstad.keccakj.fips202.Shake128;
-
-import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.util.Arrays;
 
@@ -14,13 +10,15 @@ public class KyberKeyPairGenerator
 {
     public KeyPair generateKeys512(SecureRandom rand) throws Exception
     {
+        Keccak keccak;
         int paramsK = 2;
         KeyPair indcpaPKI = this.generateKyberKeys(paramsK);
         byte[] packedPublicKey = indcpaPKI.getPublicKey();
         byte[] packedPrivateKey = indcpaPKI.getPrivateKey();
         byte[] privateKeyFixedLength = new byte[KyberParams.Kyber512SKBytes];
-        MessageDigest md = MessageDigest.getInstance("SHA3-256");
-        byte[] encodedHash = md.digest(packedPublicKey);
+        keccak = Keccak.getInstance(Keccak.ALG_SHA3_256);
+        byte[] encodedHash = new byte[32];
+        keccak.doFinal(packedPublicKey, encodedHash);
         byte[] pkh = new byte[encodedHash.length];
         System.arraycopy(encodedHash, 0, pkh, 0, encodedHash.length);
         byte[] rnd = new byte[KyberParams.paramsSymBytes];
@@ -37,14 +35,15 @@ public class KyberKeyPairGenerator
 
     public KeyPair generateKeys768(SecureRandom rand) throws Exception
     {
+        Keccak keccak;
         int paramsK = 3;
         KeyPair indcpaPKI = this.generateKyberKeys(paramsK);
         byte[] packedPrivateKey = indcpaPKI.getPrivateKey();
         byte[] packedPublicKey = indcpaPKI.getPublicKey();
         byte[] privateKeyFixedLength = new byte[KyberParams.Kyber768SKBytes];
-        MessageDigest md = MessageDigest.getInstance("SHA3-256");
-
-        byte[] encodedHash = md.digest(packedPublicKey);
+        keccak = Keccak.getInstance(Keccak.ALG_SHA3_256);
+        byte[] encodedHash = new byte[32];
+        keccak.doFinal(packedPublicKey, encodedHash);
         byte[] pkh = new byte[encodedHash.length];
         System.arraycopy(encodedHash, 0, pkh, 0, encodedHash.length);
         byte[] rnd = new byte[KyberParams.paramsSymBytes];
@@ -63,14 +62,15 @@ public class KyberKeyPairGenerator
 
     public KeyPair generateKeys1024(SecureRandom rand) throws Exception
     {
+        Keccak keccak;
         int paramsK = 4;
         KeyPair indcpaPKI = this.generateKyberKeys(paramsK);
         byte[] packedPrivateKey = indcpaPKI.getPrivateKey();
         byte[] packedPublicKey = indcpaPKI.getPublicKey();
         byte[] privateKeyFixedLength = new byte[KyberParams.Kyber1024SKBytes];
-        MessageDigest md = MessageDigest.getInstance("SHA3-256");
-
-        byte[] encodedHash = md.digest(packedPublicKey);
+        keccak = Keccak.getInstance(Keccak.ALG_SHA3_256);
+        byte[] encodedHash = new byte[32];
+        keccak.doFinal(packedPublicKey, encodedHash);
         byte[] pkh = new byte[encodedHash.length];
         System.arraycopy(encodedHash, 0, pkh, 0, encodedHash.length);
         byte[] rnd = new byte[KyberParams.paramsSymBytes];
@@ -89,17 +89,17 @@ public class KyberKeyPairGenerator
 
     public KeyPair generateKyberKeys(int paramsK) throws Exception
     {
+        Keccak keccak;
         short[][] skpv = Poly.generateNewPolyVector(paramsK);
         short[][] pkpv = Poly.generateNewPolyVector(paramsK);
         short[][] e = Poly.generateNewPolyVector(paramsK);
         byte[] publicSeed = new byte[KyberParams.paramsSymBytes];
         byte[] noiseSeed = new byte[KyberParams.paramsSymBytes];
-
-        MessageDigest h = MessageDigest.getInstance("SHA3-512");
+        keccak = Keccak.getInstance(Keccak.ALG_SHA3_512);
+        byte[] fullSeed = new byte[64];
         SecureRandom sr = SecureRandom.getInstanceStrong();
         sr.nextBytes(publicSeed);
-        byte[] fullSeed = h.digest(publicSeed);
-
+        keccak.doFinal(publicSeed, fullSeed);
         System.arraycopy(fullSeed, 0, publicSeed, 0, KyberParams.paramsSymBytes);
         System.arraycopy(fullSeed, KyberParams.paramsSymBytes, noiseSeed, 0, KyberParams.paramsSymBytes);
         short[][][] a = generateMatrix(publicSeed, false, paramsK);
@@ -159,14 +159,12 @@ public class KyberKeyPairGenerator
         short[][][] r = new short[paramsK][paramsK][KyberParams.paramsPolyBytes];
         byte[] buf = new byte[672];
         KyberUniformRandom uniformRandom = new KyberUniformRandom();
-        KeccakSponge xof = new Shake128();
+        Keccak keccak = Keccak.getInstance(Keccak.ALG_SHAKE_128);
         for (int i = 0; i < paramsK; i++)
         {
             r[i] = Poly.generateNewPolyVector(paramsK);
             for (int j = 0; j < paramsK; j++)
             {
-                xof.reset();
-                xof.getAbsorbStream().write(seed);
                 byte[] ij = new byte[2];
                 if (transposed)
                 {
@@ -178,8 +176,12 @@ public class KyberKeyPairGenerator
                     ij[0] = (byte) j;
                     ij[1] = (byte) i;
                 }
-                xof.getAbsorbStream().write(ij);
-                xof.getSqueezeStream().read(buf);
+                byte[] seedAndij = new byte[seed.length + ij.length];
+                System.arraycopy(seed, 0, seedAndij, 0, seed.length);
+                System.arraycopy(ij, 0, seedAndij, seed.length, ij.length);
+                keccak.reset();
+                keccak.setShakeDigestLength((short)buf.length);
+                keccak.doFinal(seedAndij, buf);
                 generateUniform(uniformRandom, Arrays.copyOfRange(buf, 0, 504), 504, KyberParams.paramsN);
                 int ui = uniformRandom.getUniformI();
                 r[i][j] = uniformRandom.getUniformR();

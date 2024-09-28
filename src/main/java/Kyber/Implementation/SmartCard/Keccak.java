@@ -310,9 +310,28 @@ public class Keccak {
 
         st[pt] ^= pad;
         st[(short) (rsiz-1)] ^= 0x80;
-        keccakf(st);
-        for (i = 0; i < mdlen; i++) {
-            outBuff[(short) (outOffset + i)] = st[i];
+
+        short chunks = (short)(mdlen/rsiz);
+        short last = (short)(mdlen%rsiz);
+        short copiedBytes = 0;
+
+        while (chunks > 0)
+        {
+            keccakf(st);
+            chunks--;
+            for (i = 0; i < rsiz; i++)
+            {
+                outBuff[(short)(copiedBytes + outOffset + i)] = st[i];
+            }
+            copiedBytes+=rsiz;
+        }
+        if (last > 0)
+        {
+            keccakf(st);
+            for (i = 0; i < last; i++)
+            {
+                outBuff[(short)(copiedBytes + outOffset + i)] = st[i];
+            }
         }
         return mdlen;
     }
