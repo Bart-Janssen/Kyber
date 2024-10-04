@@ -4,7 +4,6 @@ import Kyber.Implementation.SmartCard.dummy.JCSystem;
 import Kyber.Implementation.SmartCard.dummy.Util;
 import Kyber.Implementation.SmartCard.dummy.RandomData;
 import Kyber.Models.*;
-import java.security.SecureRandom;
 import java.util.Arrays;
 
 public class KyberAlgorithm
@@ -20,13 +19,23 @@ public class KyberAlgorithm
         System.out.println();
     }
 
+    protected KyberAlgorithm(byte paramsK)
+    {
+        this.paramsK = paramsK;
+        keyPair = KeyPair.getInstance(paramsK);
+    }
+
     private static KyberAlgorithm kyber;
 
-    public static KyberAlgorithm getInstance()
+    public static KyberAlgorithm getInstance(byte paramsK)
     {
-        if (kyber == null) kyber = new KyberAlgorithm();
+        if (kyber == null) kyber = new KyberAlgorithm(paramsK);
         return kyber;
     }
+
+    byte paramsK;
+    private Keccak keccak;
+    private KeyPair keyPair;
 
     //phase 2
 //    public KyberEncrypted encapsulate(byte[] variant, byte[] publicKey, byte paramsK) throws Exception
@@ -231,11 +240,9 @@ public class KyberAlgorithm
 //    }
 
 //    //phase 1
-    public void generateKeys(byte paramsK, short privateKeyBytes) throws Exception
+    public void generateKeys(short privateKeyBytes) throws Exception
     {
-        Keccak keccak;
-        KeyPair keyPair = KeyPair.getInstance(paramsK);
-        this.generateKyberKeys(paramsK);
+        this.generateKyberKeys();
         byte[] privateKeyFixedLength = new byte[privateKeyBytes];
         keccak = Keccak.getInstance(Keccak.ALG_SHA3_256);
         byte[] encodedHash = new byte[(byte)32];
@@ -253,12 +260,11 @@ public class KyberAlgorithm
         offsetEnd += (short)pkh.length;
         Util.arrayCopyNonAtomic(rnd, (short)0, privateKeyFixedLength, offsetEnd, (short)rnd.length);
         keyPair.setPrivateKey(privateKeyFixedLength);
-        print(keyPair.getPrivateKey());
         //priv = priv || pub || pkh (pub hash) || rnd
     }
 
     //phase 1
-    public void generateKyberKeys(byte paramsK) throws Exception
+    public void generateKyberKeys() throws Exception
     {
 //        Keccak keccak;
 //        short[][] skpv = Poly.generateNewPolyVector(paramsK);

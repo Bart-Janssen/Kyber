@@ -21,7 +21,7 @@ public class Applet
     public void generateKyber512Key() throws Exception
     {
         byte paramsK = (byte)2;
-        KyberAlgorithm.getInstance().generateKeys(paramsK, KyberParams.Kyber512SKBytes);
+        KyberAlgorithm.getInstance(paramsK).generateKeys(KyberParams.Kyber512SKBytes);
         this.keyPair = KeyPair.getInstance(paramsK);
     }
 
