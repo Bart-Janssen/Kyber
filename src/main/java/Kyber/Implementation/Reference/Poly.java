@@ -1,9 +1,7 @@
 package Kyber.Implementation.Reference;
 
+import Kyber.Implementation.SmartCard.Keccak;
 import Kyber.Models.KyberParams;
-import com.github.aelstad.keccakj.core.KeccakSponge;
-import com.github.aelstad.keccakj.fips202.Shake256;
-
 import java.util.Arrays;
 
 public final class Poly {
@@ -156,7 +154,7 @@ public final class Poly {
     }
 
     public static short[] getNoisePoly(byte[] seed, byte nonce, int paramsK) {
-        int l;
+        short l;
         byte[] p;
         switch (paramsK) {
             case 2:
@@ -218,14 +216,14 @@ public final class Poly {
         return r;
     }
 
-    public static byte[] generatePRFByteArray(int l, byte[] key, byte nonce) {
+    public static byte[] generatePRFByteArray(short l, byte[] key, byte nonce) {
         byte[] hash = new byte[l];
-        KeccakSponge xof = new Shake256();
         byte[] newKey = new byte[key.length + 1];
         System.arraycopy(key, 0, newKey, 0, key.length);
         newKey[key.length] = nonce;
-        xof.getAbsorbStream().write(newKey);
-        xof.getSqueezeStream().read(hash);
+        Keccak keccak = Keccak.getInstance(Keccak.ALG_SHAKE_256);
+        keccak.setShakeDigestLength(l);
+        keccak.doFinal(newKey, hash);
         return hash;
     }
 

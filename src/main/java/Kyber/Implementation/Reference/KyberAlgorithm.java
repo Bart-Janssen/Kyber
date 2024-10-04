@@ -247,7 +247,7 @@ public class KyberAlgorithm
         return unpackedCipherText;
     }
 
-    public static short[][] unpackPrivateKey(byte[] packedPrivateKey, int paramsK)
+    public short[][] unpackPrivateKey(byte[] packedPrivateKey, int paramsK)
     {
         short[][] unpackedPrivateKey = Poly.polyVectorFromBytes(packedPrivateKey, paramsK);
         return unpackedPrivateKey;
@@ -285,7 +285,7 @@ public class KyberAlgorithm
         return packCiphertext(bp, Poly.polyReduce(v), paramsK);
     }
 
-    public static UnpackedPublicKey unpackPublicKey(byte[] packedPublicKey, int paramsK)
+    public UnpackedPublicKey unpackPublicKey(byte[] packedPublicKey, int paramsK)
     {
         UnpackedPublicKey unpackedKey = new UnpackedPublicKey();
         switch (paramsK)
@@ -305,7 +305,7 @@ public class KyberAlgorithm
         return unpackedKey;
     }
 
-    public static short[][][] generateMatrix(byte[] seed, boolean transposed, int paramsK)
+    public short[][][] generateMatrix(byte[] seed, boolean transposed, int paramsK)
     {
         short[][][] r = new short[paramsK][paramsK][KyberParams.paramsPolyBytes];
         byte[] buf = new byte[672];
@@ -350,7 +350,7 @@ public class KyberAlgorithm
         return r;
     }
 
-    public static void generateUniform(KyberUniformRandom uniformRandom, byte[] buf, int bufl, int l)
+    public void generateUniform(KyberUniformRandom uniformRandom, byte[] buf, int bufl, int l)
     {
         short[] uniformR = new short[KyberParams.paramsPolyBytes];
         int d1;
@@ -377,7 +377,7 @@ public class KyberAlgorithm
         uniformRandom.setUniformR(uniformR);
     }
 
-    public static byte[] packCiphertext(short[][] b, short[] v, int paramsK)
+    public byte[] packCiphertext(short[][] b, short[] v, int paramsK)
     {
         byte[] bCompress = Poly.compressPolyVector(b, paramsK);
         byte[] vCompress = Poly.compressPoly(v, paramsK);
