@@ -1,5 +1,8 @@
 package Kyber.Implementation.SmartCard;
 
+import Kyber.Implementation.SmartCard.dummy.JCSystem;
+import Kyber.Implementation.SmartCard.dummy.Util;
+import Kyber.Implementation.SmartCard.dummy.RandomData;
 import Kyber.Models.*;
 import java.security.SecureRandom;
 import java.util.Arrays;
@@ -228,69 +231,73 @@ public class KyberAlgorithm
 //    }
 
 //    //phase 1
-    public KeyPair generateKeys(byte paramsK, short privateKeyBytes) throws Exception
+    public void generateKeys(byte paramsK, short privateKeyBytes) throws Exception
     {
         Keccak keccak;
-        KeyPair indcpaPKI = this.generateKyberKeys(paramsK);
-        byte[] packedPrivateKey = indcpaPKI.getPrivateKey();
-        byte[] packedPublicKey = indcpaPKI.getPublicKey();
+        KeyPair keyPair = KeyPair.getInstance(paramsK);
+        this.generateKyberKeys(paramsK);
         byte[] privateKeyFixedLength = new byte[privateKeyBytes];
         keccak = Keccak.getInstance(Keccak.ALG_SHA3_256);
-        byte[] encodedHash = new byte[32];
-        keccak.doFinal(packedPublicKey, encodedHash);
+        byte[] encodedHash = new byte[(byte)32];
+        keccak.doFinal(keyPair.getPublicKey(), encodedHash);
         byte[] pkh = new byte[encodedHash.length];
-        System.arraycopy(encodedHash, 0, pkh, 0, encodedHash.length);
-        byte[] rnd = new byte[KyberParams.paramsSymBytes];
-        SecureRandom.getInstanceStrong().nextBytes(rnd);
-        int offsetEnd = packedPrivateKey.length;
-        System.arraycopy(packedPrivateKey, 0, privateKeyFixedLength, 0, offsetEnd);
-        System.arraycopy(packedPublicKey, 0, privateKeyFixedLength, offsetEnd, packedPublicKey.length);
-        offsetEnd = offsetEnd + packedPublicKey.length;
-        System.arraycopy(pkh, 0, privateKeyFixedLength, offsetEnd, pkh.length);
-        offsetEnd += pkh.length;
-        System.arraycopy(rnd, 0, privateKeyFixedLength, offsetEnd, rnd.length);
-        return new KeyPair(privateKeyFixedLength, packedPublicKey);
+        Util.arrayCopyNonAtomic(encodedHash, (short)0, pkh, (short)0, (short)encodedHash.length);
+        byte[] rnd = JCSystem.makeTransientByteArray((short)32, JCSystem.CLEAR_ON_DESELECT);
+        RandomData.OneShot random = RandomData.OneShot.open(RandomData.ALG_TRNG);
+        random.nextBytes(rnd, (short)0, (short)32);
+        short offsetEnd = (short)keyPair.getPrivateKey().length;
+        Util.arrayCopyNonAtomic(keyPair.getPrivateKey(), (short)0, privateKeyFixedLength, (short)0, offsetEnd);
+        Util.arrayCopyNonAtomic(keyPair.getPublicKey(), (short)0, privateKeyFixedLength, offsetEnd, (short)keyPair.getPublicKey().length);
+        offsetEnd = (short)(offsetEnd + keyPair.getPublicKey().length);
+        Util.arrayCopyNonAtomic(pkh, (short)0, privateKeyFixedLength, offsetEnd, (short)pkh.length);
+        offsetEnd += (short)pkh.length;
+        Util.arrayCopyNonAtomic(rnd, (short)0, privateKeyFixedLength, offsetEnd, (short)rnd.length);
+        keyPair.setPrivateKey(privateKeyFixedLength);
+        print(keyPair.getPrivateKey());
+        //priv = priv || pub || pkh (pub hash) || rnd
     }
 
     //phase 1
-    public KeyPair generateKyberKeys(byte paramsK) throws Exception
+    public void generateKyberKeys(byte paramsK) throws Exception
     {
-        Keccak keccak;
-        short[][] skpv = Poly.generateNewPolyVector(paramsK);
-        short[][] pkpv = Poly.generateNewPolyVector(paramsK);
-        short[][] e = Poly.generateNewPolyVector(paramsK);
-        byte[] publicSeed = new byte[KyberParams.paramsSymBytes];
-        byte[] noiseSeed = new byte[KyberParams.paramsSymBytes];
-        keccak = Keccak.getInstance(Keccak.ALG_SHA3_512);
-        byte[] fullSeed = new byte[64];
-        SecureRandom sr = SecureRandom.getInstanceStrong();
-        sr.nextBytes(publicSeed);
-        keccak.doFinal(publicSeed, fullSeed);
-        System.arraycopy(fullSeed, 0, publicSeed, 0, KyberParams.paramsSymBytes);
-        System.arraycopy(fullSeed, KyberParams.paramsSymBytes, noiseSeed, 0, KyberParams.paramsSymBytes);
-        short[][][] a = generateMatrix(publicSeed, false, paramsK);
-        byte nonce = (byte) 0;
-        for (byte i = 0; i < paramsK; i++)
-        {
-            skpv[i] = Poly.getNoisePoly(noiseSeed, nonce, paramsK);
-            nonce = (byte) (nonce + (byte) 1);
-        }
-        for (byte i = 0; i < paramsK; i++)
-        {
-            e[i] = Poly.getNoisePoly(noiseSeed, nonce, paramsK);
-            nonce = (byte) (nonce + (byte) 1);
-        }
-        skpv = Poly.polyVectorNTT(skpv, paramsK);
-        skpv = Poly.polyVectorReduce(skpv, paramsK);
-        e = Poly.polyVectorNTT(e, paramsK);
-        for (byte i = 0; i < paramsK; i++)
-        {
-            short[] temp = Poly.polyVectorPointWiseAccMont(a[i], skpv, paramsK);
-            pkpv[i] = Poly.polyToMont(temp);
-        }
-        pkpv = Poly.polyVectorAdd(pkpv, e, paramsK);
-        pkpv = Poly.polyVectorReduce(pkpv, paramsK);
-        return new KeyPair(packPrivateKey(skpv, paramsK), packPublicKey(pkpv, publicSeed, paramsK));
+//        Keccak keccak;
+//        short[][] skpv = Poly.generateNewPolyVector(paramsK);
+//        short[][] pkpv = Poly.generateNewPolyVector(paramsK);
+//        short[][] e = Poly.generateNewPolyVector(paramsK);
+//        byte[] publicSeed = JCSystem.makeTransientByteArray(KyberParams.paramsSymBytes, JCSystem.CLEAR_ON_DESELECT);
+//        byte[] noiseSeed = new byte[KyberParams.paramsSymBytes];
+//        keccak = Keccak.getInstance(Keccak.ALG_SHA3_512);
+//        byte[] fullSeed = new byte[64];
+//        RandomData.OneShot random = RandomData.OneShot.open(RandomData.ALG_TRNG);
+//        random.nextBytes(publicSeed, (short)0, (short)32);
+//        keccak.doFinal(publicSeed, fullSeed);
+//        System.arraycopy(fullSeed, 0, publicSeed, 0, KyberParams.paramsSymBytes);
+//        System.arraycopy(fullSeed, KyberParams.paramsSymBytes, noiseSeed, 0, KyberParams.paramsSymBytes);
+//        short[][][] a = generateMatrix(publicSeed, false, paramsK);
+//        byte nonce = (byte) 0;
+//        for (byte i = 0; i < paramsK; i++)
+//        {
+//            skpv[i] = Poly.getNoisePoly(noiseSeed, nonce, paramsK);
+//            nonce = (byte) (nonce + (byte) 1);
+//        }
+//        for (byte i = 0; i < paramsK; i++)
+//        {
+//            e[i] = Poly.getNoisePoly(noiseSeed, nonce, paramsK);
+//            nonce = (byte) (nonce + (byte) 1);
+//        }
+//        skpv = Poly.polyVectorNTT(skpv, paramsK);
+//        skpv = Poly.polyVectorReduce(skpv, paramsK);
+//        e = Poly.polyVectorNTT(e, paramsK);
+//        for (byte i = 0; i < paramsK; i++)
+//        {
+//            short[] temp = Poly.polyVectorPointWiseAccMont(a[i], skpv, paramsK);
+//            pkpv[i] = Poly.polyToMont(temp);
+//        }
+//        pkpv = Poly.polyVectorAdd(pkpv, e, paramsK);
+//        pkpv = Poly.polyVectorReduce(pkpv, paramsK);
+//        KeyPair keyPair = KeyPair.getInstance(paramsK);
+//        keyPair.setPrivateKey(this.packPrivateKey(skpv, paramsK));
+//        keyPair.setPublicKey(this.packPublicKey(pkpv, publicSeed, paramsK));
     }
 
     //phase 1

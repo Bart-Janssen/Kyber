@@ -20,7 +20,9 @@ public class Applet
     //Fake apdu call to generate 512 keys
     public void generateKyber512Key() throws Exception
     {
-        this.keyPair = KyberAlgorithm.getInstance().generateKeys((byte)2, KyberParams.Kyber512SKBytes);
+        byte paramsK = (byte)2;
+        KyberAlgorithm.getInstance().generateKeys(paramsK, KyberParams.Kyber512SKBytes);
+        this.keyPair = KeyPair.getInstance(paramsK);
     }
 
     //Fake apdu call to get public key
