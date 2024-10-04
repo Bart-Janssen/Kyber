@@ -1,5 +1,7 @@
 package Kyber.smartcard;
 
+import Kyber.Implementation.SmartCard.Applet;
+
 import javax.smartcardio.Card;
 
 public class KyberSmartCard extends SmartCard
@@ -14,5 +16,23 @@ public class KyberSmartCard extends SmartCard
     public void selectKyberApplet() throws Exception
     {
         super.selectApplet(this.kyberApplet512AID);
+    }
+
+    public void generateKyber512Key() throws Exception
+    {
+        //replace this with actual smart card apdu
+        Applet.getInstance().generateKyber512Key();
+    }
+
+    public byte[] getPublicKey()
+    {
+        //replace this with actual smart card apdu
+        return Applet.getInstance().getPublicKey();
+    }
+
+    public byte[] getPrivateKey()
+    {
+        //replace this with actual smart card apdu
+        return Applet.getInstance().getPrivateKey();
     }
 }

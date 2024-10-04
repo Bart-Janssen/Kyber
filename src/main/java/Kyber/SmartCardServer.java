@@ -1,7 +1,7 @@
 package Kyber;
 
-import Kyber.Models.KeyPair;
-import Kyber.service.KyberSmartCardService;
+import Kyber.Implementation.SmartCard.Applet;
+import Kyber.service.KyberReferenceService;
 import Kyber.smartcard.KyberSmartCard;
 
 import javax.smartcardio.Card;
@@ -18,11 +18,9 @@ public class SmartCardServer extends Server
         super(mode);
         this.connectSmartCard(showSmartCardLogging);
 
-        KeyPair keyPair = new KyberSmartCardService().generateKeys(super.mode);
-        super.privateKey = keyPair.getPrivateKey();
-        super.publicKey = keyPair.getPublicKey();
-        System.out.print("[Server]  : Public Key length: " + super.publicKey.length + " | ");super.print(super.publicKey);
-        System.out.print("[Server]  : Private Key length: " + super.privateKey.length + " | ");super.print(super.privateKey);
+        if (super.mode != 512) throw new RuntimeException("Only 512 supported right now");
+        this.smartCard.generateKyber512Key();
+        super.publicKey = this.smartCard.getPublicKey();
     }
 
     private void connectSmartCard(boolean showSmartCardLogging)
@@ -43,7 +41,8 @@ public class SmartCardServer extends Server
     @Override
     public void decapsulate(byte[] encapsulation) throws Exception
     {
-        super.aesKey = new KyberSmartCardService().decapsulate(super.mode, super.privateKey, encapsulation);
+        //Only replace when phase 3
+        super.aesKey = new KyberReferenceService().decapsulate(super.mode, this.smartCard.getPrivateKey(), encapsulation);
         System.out.print("[Server]  : Decapsulated secret: " + super.aesKey.length + " | ");super.print(super.aesKey);
     }
 
