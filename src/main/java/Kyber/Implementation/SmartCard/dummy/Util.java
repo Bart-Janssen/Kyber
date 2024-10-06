@@ -10,8 +10,8 @@ public class Util
         Arrays.fill(bc, (byte)0x00);
     }
 
-    public static void arrayCopyNonAtomic(byte[] st, short i, byte[] bc, short i1, short wordl)
+    public static void arrayCopyNonAtomic(byte[] src, short srcIndex, byte[] dst, short dstIndex, short length)
     {
-        System.arraycopy(st,i,bc,i1,wordl);
+        System.arraycopy(src,srcIndex,dst,dstIndex,length);
     }
 }

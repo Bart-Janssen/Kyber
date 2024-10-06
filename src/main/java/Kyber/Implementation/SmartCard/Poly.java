@@ -1,10 +1,29 @@
 package Kyber.Implementation.SmartCard;
 
+import Kyber.Implementation.SmartCard.dummy.Util;
 import Kyber.Models.KyberParams;
-
 import java.util.Arrays;
 
 public final class Poly {
+
+    protected static void print(byte[] data)
+    {
+        StringBuilder sb = new StringBuilder();
+        for (byte b : data)
+        {
+            sb.append(String.format("%02X ", b));
+        }
+        System.out.print(sb);
+        System.out.println();
+    }
+
+    public static void arrayCopyNonAtomic(short[] src, short srcIndex, short[] dst, short dstIndex, short length)
+    {
+        for (short i = 0; i < length; i++)
+        {
+            dst[(short)(dstIndex+i)] = src[(short)(srcIndex+i)];
+        }
+    }
 
     public final static short[] nttZetas = new short[]{
             2285, 2571, 2970, 1812, 1493, 1422, 287, 202, 3158, 622, 1577, 182, 962,
@@ -106,7 +125,24 @@ public final class Poly {
         return r;
     }
 
-    public static byte[] polyToBytes(short[] a) {
+    //Smart card ok, need optimization
+    public static byte[] polyToBytes(short[] a)
+    {
+        short t0, t1;
+        byte[] r = new byte[KyberParams.paramsPolyBytes];
+        a = Poly.polyConditionalSubQ(a);
+        for (short i = 0; i < (short)(KyberParams.paramsN / (byte)2); i++)
+        {
+            t0 = ((short)(a[(short)((byte)2 * i)] & (short)0xFFFF));
+            t1 = (short)((a[(short)((byte)2 * i + (byte)1)]) & (short)0xFFFF);
+            r[(short)((byte)3 * i + (byte)0)] = (byte) (t0 >>  (byte)0);
+            r[(short)((byte)3 * i + (byte)1)] = (byte) ((t0 >> (byte)8) | (t1 << (byte)4));
+            r[(short)((byte)3 * i + (byte)2)] = (byte) (t1 >>  (byte)4);
+        }
+        return r;
+    }
+
+    public static byte[] polyToBytessc(short[] a) {
         int t0, t1;
         byte[] r = new byte[KyberParams.paramsPolyBytes];
         a = Poly.polyConditionalSubQ(a);
@@ -281,6 +317,7 @@ public final class Poly {
         return r;
     }
 
+    //Optimize return as void since it returns input anyway
     public static short[] polyBaseMulMont(short[] polyA, short[] polyB) {
         for (int i = 0; i < KyberParams.paramsN / 4; i++) {
             short[] rx = Poly.baseMultiplier(
@@ -369,9 +406,10 @@ public final class Poly {
         return polyA;
     }
 
-    public static short[][] generateNewPolyVector(byte paramsK) {
-        short[][] pv = new short[paramsK][KyberParams.paramsPolyBytes];
-        return pv;
+    //smart card ok (might not want to do this at all)
+    public static short[] generateNewPolyVector(byte paramsK)
+    {
+        return new short[(short)(paramsK*KyberParams.paramsPolyBytes)];
     }
 
     public static byte[] compressPolyVector(short[][] a, byte paramsK) {
@@ -479,11 +517,16 @@ public final class Poly {
         return r;
     }
 
-    public static byte[] polyVectorToBytes(short[][] polyA, byte paramsK) {
-        byte[] r = new byte[paramsK * KyberParams.paramsPolyBytes];
-        for (byte i = 0; i < paramsK; i++) {
-            byte[] byteA = polyToBytes(polyA[i]);
-            System.arraycopy(byteA, 0, r, i * KyberParams.paramsPolyBytes, byteA.length);
+    //Smart card ok, need optimize, r as parameter
+    public static byte[] polyVectorToBytes(short[] polyA, byte paramsK)
+    {
+        byte[] r = new byte[(short)(paramsK * KyberParams.paramsPolyBytes)];
+        short[] row = new short[KyberParams.paramsPolyBytes];
+        for (byte i = 0; i < paramsK; i++)
+        {
+            Poly.arrayCopyNonAtomic(polyA, (short)(i * KyberParams.paramsPolyBytes), row, (short)0, KyberParams.paramsPolyBytes);
+            byte[] byteA = polyToBytes(row);
+            Util.arrayCopyNonAtomic(byteA, (short)0, r, (short)(i * KyberParams.paramsPolyBytes), (short)byteA.length);
         }
         return r;
     }
@@ -498,9 +541,17 @@ public final class Poly {
         return r;
     }
 
-    public static short[][] polyVectorNTT(short[][] r, byte paramsK) {
-        for (byte i = 0; i < paramsK; i++) {
-            r[i] = Poly.polyNTT(r[i]);
+    //k = 2, r = 384 || 384
+    public static short[] polyVectorNTT(short[] r, byte paramsK)
+    {
+        for (byte i = 0; i < paramsK; i++)
+        {
+            //i=0, row = 384, 0*384 = 0   -> 384
+            //i=1, row = 384, 1*384 = 384 -> 768
+            short[] row = new short[(short)384];
+            Poly.arrayCopyNonAtomic(r, (short)(i * (short)384), row, (short)0, (short)384);
+            row = polyNTT(row);
+            Poly.arrayCopyNonAtomic(row, (short)0, r, (short)(i * (short)384), (short)384);
         }
         return r;
     }
@@ -512,18 +563,37 @@ public final class Poly {
         return r;
     }
 
-    public static short[] polyVectorPointWiseAccMont(short[][] polyA, short[][] polyB, byte paramsK) {
-        short[] r = Poly.polyBaseMulMont(polyA[0], polyB[0]);
-        for (byte i = 1; i < paramsK; i++) {
-            short[] t = Poly.polyBaseMulMont(polyA[i], polyB[i]);
+    public static short[] polyVectorPointWiseAccMont(short[] polyA, short[] polyB, byte paramsK)
+    {
+        short rowSize = 384;
+        short[] Brow = new short[rowSize];
+        Poly.arrayCopyNonAtomic(polyB, (short)0, Brow, (short)0, rowSize);
+        short[] polyArow = new short[rowSize];
+        Poly.arrayCopyNonAtomic(polyA, (short)0, polyArow, (short)0, rowSize);
+        //variable r can be removed since polyBaseMulMont returns polyArow
+        short[] r = Poly.polyBaseMulMont(polyArow, Brow);
+        for (byte i = 1; i < paramsK; i++)
+        {
+            short[] Arow = new short[rowSize];
+            Poly.arrayCopyNonAtomic(polyA, (short)(i*rowSize), Arow, (short)0, rowSize);
+            Poly.arrayCopyNonAtomic(polyB, (short)(i*rowSize), Brow, (short)0, rowSize);
+            short[] t = Poly.polyBaseMulMont(Arow, Brow);
             r = Poly.polyAdd(r, t);
         }
         return polyReduce(r);
     }
 
-    public static short[][] polyVectorReduce(short[][] r, byte paramsK) {
-        for (byte i = 0; i < paramsK; i++) {
-            r[i] = Poly.polyReduce(r[i]);
+    //k = 2, r = 384 || 384
+    public static short[] polyVectorReduce(short[] r, byte paramsK)
+    {
+        for (byte i = 0; i < paramsK; i++)
+        {
+            //i=0, row = 384, 0*384 = 0   -> 384
+            //i=1, row = 384, 1*384 = 384 -> 768
+            short[] row = new short[(short)384];
+            Poly.arrayCopyNonAtomic(r, (short)(i * (short)384), row, (short)0, (short)384);
+            row = polyReduce(row);
+            Poly.arrayCopyNonAtomic(row, (short)0, r, (short)(i * (short)384), (short)384);
         }
         return r;
     }
@@ -535,9 +605,15 @@ public final class Poly {
         return r;
     }
 
-    public static short[][] polyVectorAdd(short[][] polyA, short[][] polyB, byte paramsK) {
-        for (byte i = 0; i < paramsK; i++) {
-            polyA[i] = Poly.polyAdd(polyA[i], polyB[i]);
+    public static short[] polyVectorAdd(short[] polyA, short[] polyB, byte paramsK)
+    {
+        short rowSize = 384;
+        for (byte i = 0; i < paramsK; i++)
+        {
+            for (short j = 0; j < rowSize; j++)
+            {
+                polyA[(i * rowSize) + j] += polyB[(i * rowSize) + j];
+            }
         }
         return polyA;
     }

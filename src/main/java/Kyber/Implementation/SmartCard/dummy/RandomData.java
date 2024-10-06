@@ -17,5 +17,7 @@ public class RandomData
         {
             SecureRandom.getInstanceStrong().nextBytes(rnd);
         }
+
+        public void close(){}
     }
 }

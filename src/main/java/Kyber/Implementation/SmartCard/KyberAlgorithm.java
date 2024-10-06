@@ -36,7 +36,7 @@ public class KyberAlgorithm
     byte paramsK;
     private Keccak keccak;
     private KeyPair keyPair;
-
+    
     //phase 2
 //    public KyberEncrypted encapsulate(byte[] variant, byte[] publicKey, byte paramsK) throws Exception
 //    {
@@ -158,15 +158,16 @@ public class KyberAlgorithm
 //    }
 
     //phase 1
-    public short[][][] generateMatrix(byte[] seed, boolean transposed, byte paramsK)
+    //r = array 1 || array 1.1 || array 1.2 || array 2 || array 2.1 || array 2.2 || array 3 || array 3.1 ...
+    public short[] generateMatrix(byte[] seed, boolean transposed, byte paramsK)
     {
-        short[][][] r = new short[paramsK][paramsK][KyberParams.paramsPolyBytes];
+        //2*2*384 = 1536
+        short[] r = new short[paramsK*paramsK*KyberParams.paramsPolyBytes];
         byte[] buf = new byte[672];
         KyberUniformRandom uniformRandom = new KyberUniformRandom();
-        Keccak keccak = Keccak.getInstance(Keccak.ALG_SHAKE_128);
+        keccak = Keccak.getInstance(Keccak.ALG_SHAKE_128);
         for (byte i = 0; i < paramsK; i++)
         {
-            r[i] = Poly.generateNewPolyVector(paramsK);
             for (byte j = 0; j < paramsK; j++)
             {
                 byte[] ij = new byte[2];
@@ -188,7 +189,7 @@ public class KyberAlgorithm
                 keccak.doFinal(seedAndij, buf);
                 generateUniform(uniformRandom, Arrays.copyOfRange(buf, 0, 504), 504, KyberParams.paramsN);
                 int ui = uniformRandom.getUniformI();
-                r[i][j] = uniformRandom.getUniformR();
+                System.arraycopy(uniformRandom.getUniformR(), 0, r, ((i*2)+j)*384, 384);
                 while (ui < KyberParams.paramsN)
                 {
                     generateUniform(uniformRandom, Arrays.copyOfRange(buf, 504, 672), 168, KyberParams.paramsN - ui);
@@ -196,7 +197,7 @@ public class KyberAlgorithm
                     short[] missing = uniformRandom.getUniformR();
                     for (int k = ui; k < KyberParams.paramsN; k++)
                     {
-                        r[i][j][k] = missing[k - ui];
+                        r[((i * 2 + j) * 384) + k] = missing[k - ui];
                     }
                     ui = ui + ctrn;
                 }
@@ -239,71 +240,74 @@ public class KyberAlgorithm
 //        return variant;
 //    }
 
-//    //phase 1
+//    //phase 1 Smart card ok
     public void generateKeys(short privateKeyBytes) throws Exception
     {
         this.generateKyberKeys();
         byte[] privateKeyFixedLength = new byte[privateKeyBytes];
-        keccak = Keccak.getInstance(Keccak.ALG_SHA3_256);
-        byte[] encodedHash = new byte[(byte)32];
-        keccak.doFinal(keyPair.getPublicKey(), encodedHash);
+        this.keccak = Keccak.getInstance(Keccak.ALG_SHA3_256);
+        byte[] encodedHash = new byte[32];
+        this.keccak.doFinal(this.keyPair.getPublicKey(), encodedHash);
         byte[] pkh = new byte[encodedHash.length];
         Util.arrayCopyNonAtomic(encodedHash, (short)0, pkh, (short)0, (short)encodedHash.length);
         byte[] rnd = JCSystem.makeTransientByteArray((short)32, JCSystem.CLEAR_ON_DESELECT);
         RandomData.OneShot random = RandomData.OneShot.open(RandomData.ALG_TRNG);
         random.nextBytes(rnd, (short)0, (short)32);
+        random.close();
         short offsetEnd = (short)keyPair.getPrivateKey().length;
-        Util.arrayCopyNonAtomic(keyPair.getPrivateKey(), (short)0, privateKeyFixedLength, (short)0, offsetEnd);
-        Util.arrayCopyNonAtomic(keyPair.getPublicKey(), (short)0, privateKeyFixedLength, offsetEnd, (short)keyPair.getPublicKey().length);
-        offsetEnd = (short)(offsetEnd + keyPair.getPublicKey().length);
+        Util.arrayCopyNonAtomic(this.keyPair.getPrivateKey(), (short)0, privateKeyFixedLength, (short)0, offsetEnd);
+        Util.arrayCopyNonAtomic(this.keyPair.getPublicKey(), (short)0, privateKeyFixedLength, offsetEnd, (short)this.keyPair.getPublicKey().length);
+        offsetEnd = (short)(offsetEnd + this.keyPair.getPublicKey().length);
         Util.arrayCopyNonAtomic(pkh, (short)0, privateKeyFixedLength, offsetEnd, (short)pkh.length);
         offsetEnd += (short)pkh.length;
         Util.arrayCopyNonAtomic(rnd, (short)0, privateKeyFixedLength, offsetEnd, (short)rnd.length);
-        keyPair.setPrivateKey(privateKeyFixedLength);
+        this.keyPair.setPrivateKey(privateKeyFixedLength);
         //priv = priv || pub || pkh (pub hash) || rnd
     }
 
     //phase 1
     public void generateKyberKeys() throws Exception
     {
-//        Keccak keccak;
-//        short[][] skpv = Poly.generateNewPolyVector(paramsK);
-//        short[][] pkpv = Poly.generateNewPolyVector(paramsK);
-//        short[][] e = Poly.generateNewPolyVector(paramsK);
-//        byte[] publicSeed = JCSystem.makeTransientByteArray(KyberParams.paramsSymBytes, JCSystem.CLEAR_ON_DESELECT);
-//        byte[] noiseSeed = new byte[KyberParams.paramsSymBytes];
-//        keccak = Keccak.getInstance(Keccak.ALG_SHA3_512);
-//        byte[] fullSeed = new byte[64];
-//        RandomData.OneShot random = RandomData.OneShot.open(RandomData.ALG_TRNG);
-//        random.nextBytes(publicSeed, (short)0, (short)32);
-//        keccak.doFinal(publicSeed, fullSeed);
-//        System.arraycopy(fullSeed, 0, publicSeed, 0, KyberParams.paramsSymBytes);
-//        System.arraycopy(fullSeed, KyberParams.paramsSymBytes, noiseSeed, 0, KyberParams.paramsSymBytes);
-//        short[][][] a = generateMatrix(publicSeed, false, paramsK);
-//        byte nonce = (byte) 0;
-//        for (byte i = 0; i < paramsK; i++)
-//        {
-//            skpv[i] = Poly.getNoisePoly(noiseSeed, nonce, paramsK);
-//            nonce = (byte) (nonce + (byte) 1);
-//        }
-//        for (byte i = 0; i < paramsK; i++)
-//        {
-//            e[i] = Poly.getNoisePoly(noiseSeed, nonce, paramsK);
-//            nonce = (byte) (nonce + (byte) 1);
-//        }
-//        skpv = Poly.polyVectorNTT(skpv, paramsK);
-//        skpv = Poly.polyVectorReduce(skpv, paramsK);
-//        e = Poly.polyVectorNTT(e, paramsK);
-//        for (byte i = 0; i < paramsK; i++)
-//        {
-//            short[] temp = Poly.polyVectorPointWiseAccMont(a[i], skpv, paramsK);
-//            pkpv[i] = Poly.polyToMont(temp);
-//        }
-//        pkpv = Poly.polyVectorAdd(pkpv, e, paramsK);
-//        pkpv = Poly.polyVectorReduce(pkpv, paramsK);
-//        KeyPair keyPair = KeyPair.getInstance(paramsK);
-//        keyPair.setPrivateKey(this.packPrivateKey(skpv, paramsK));
-//        keyPair.setPublicKey(this.packPublicKey(pkpv, publicSeed, paramsK));
+        short[] skpv = Poly.generateNewPolyVector(this.paramsK);
+        short[] pkpv = Poly.generateNewPolyVector(this.paramsK);
+        short[] e = Poly.generateNewPolyVector(this.paramsK);
+        byte[] publicSeed = JCSystem.makeTransientByteArray(KyberParams.paramsSymBytes, JCSystem.CLEAR_ON_DESELECT);
+        byte[] noiseSeed = new byte[KyberParams.paramsSymBytes];
+        this.keccak = Keccak.getInstance(Keccak.ALG_SHA3_512);
+        byte[] fullSeed = new byte[(byte)64];
+        RandomData.OneShot random = RandomData.OneShot.open(RandomData.ALG_TRNG);
+        random.nextBytes(publicSeed, (short)0, (short)32);
+        random.close();
+        this.keccak.doFinal(publicSeed, fullSeed);
+        Util.arrayCopyNonAtomic(fullSeed, (short)0, publicSeed, (short)0, KyberParams.paramsSymBytes);
+        Util.arrayCopyNonAtomic(fullSeed, KyberParams.paramsSymBytes, noiseSeed, (short)0, KyberParams.paramsSymBytes);
+        short[] a = generateMatrix(publicSeed, false, paramsK);
+        byte nonce = (byte) 0;
+        for (byte i = 0; i < paramsK; i++)
+        {
+            Poly.arrayCopyNonAtomic(Poly.getNoisePoly(noiseSeed, nonce, paramsK), (short)0, skpv, (short)(i*KyberParams.paramsPolyBytes), KyberParams.paramsPolyBytes);
+            nonce = (byte) (nonce + (byte) 1);
+        }
+        for (byte i = 0; i < paramsK; i++)
+        {
+            Poly.arrayCopyNonAtomic(Poly.getNoisePoly(noiseSeed, nonce, paramsK), (short)0, e, (short)(i*KyberParams.paramsPolyBytes), KyberParams.paramsPolyBytes);
+            nonce = (byte) (nonce + (byte) 1);
+        }
+        skpv = Poly.polyVectorNTT(skpv, paramsK);
+        skpv = Poly.polyVectorReduce(skpv, paramsK);
+        e = Poly.polyVectorNTT(e, paramsK);
+        for (byte i = 0; i < paramsK; i++)
+        {
+            short[] polyArow = new short[384*paramsK];
+            System.arraycopy(a, i*paramsK*384, polyArow,0,384*paramsK);
+            short[] temp = Poly.polyVectorPointWiseAccMont(polyArow, skpv, paramsK);
+            Poly.arrayCopyNonAtomic(Poly.polyToMont(temp), (short)0, pkpv, (short)(i*KyberParams.paramsPolyBytes), KyberParams.paramsPolyBytes);
+        }
+        pkpv = Poly.polyVectorAdd(pkpv, e, paramsK);
+        pkpv = Poly.polyVectorReduce(pkpv, paramsK);
+        KeyPair keyPair = KeyPair.getInstance(paramsK);
+        keyPair.setPrivateKey(this.packPrivateKey(skpv, paramsK));
+        keyPair.setPublicKey(this.packPublicKey(pkpv, publicSeed, paramsK));
     }
 
     //phase 1
@@ -335,13 +339,14 @@ public class KyberAlgorithm
     }
 
     //phase 1
-    public byte[] packPrivateKey(short[][] privateKey, byte paramsK)
+    public byte[] packPrivateKey(short[] privateKey, byte paramsK)
     {
         return Poly.polyVectorToBytes(privateKey, paramsK);
     }
 
     //phase 1
-    public byte[] packPublicKey(short[][] publicKey, byte[] seed, byte paramsK)
+
+    public byte[] packPublicKey(short[] publicKey, byte[] seed, byte paramsK)
     {
         byte[] initialArray = Poly.polyVectorToBytes(publicKey, paramsK);
         byte[] packedPublicKey;
@@ -349,10 +354,10 @@ public class KyberAlgorithm
         {
             //Only kyber 512 for now
             case 2: default:
-                packedPublicKey = new byte[KyberParams.paramsIndcpaPublicKeyBytesK512];
-                System.arraycopy(initialArray, 0, packedPublicKey, 0, initialArray.length);
-                System.arraycopy(seed, 0, packedPublicKey, initialArray.length, seed.length);
-                return packedPublicKey;
+            packedPublicKey = new byte[KyberParams.paramsIndcpaPublicKeyBytesK512];
+            System.arraycopy(initialArray, 0, packedPublicKey, 0, initialArray.length);
+            System.arraycopy(seed, 0, packedPublicKey, initialArray.length, seed.length);
+            return packedPublicKey;
 //            case 3:
 //                packedPublicKey = new byte[KyberParams.paramsIndcpaPublicKeyBytesK768];
 //                System.arraycopy(initialArray, 0, packedPublicKey, 0, initialArray.length);
