@@ -6,33 +6,37 @@ public class Kyber
     {
         try
         {
-//            Server server = new KeyServer(512, true, true);
+            for (int i = 0; i < 1; i++)
+            {
+                System.out.println(i);
+//                            Server server = new KeyServer(512, true, true);
 //            Server server = new JCEServer(512);
-            Server server = new SmartCardServer(512, true);
+                Server server = new SmartCardServer(512, true);
 
 
-            Client client = new JCEClient(512);
-            client.setServerPublic(server.getPublic());
+                Client client = new JCEClient(512);
+                client.setServerPublic(server.getPublic());
 
-            byte[] encapsulation = client.encapsulate();
+                byte[] encapsulation = client.encapsulate();
 
-            //Send encapsulation over insecure network to server
-            System.out.print("[Network] : Encapsulated secret: " + encapsulation.length + " | ");print(encapsulation);
+                //Send encapsulation over insecure network to server
+                System.out.print("[Network] : Encapsulated secret: " + encapsulation.length + " | ");print(encapsulation);
 
 //            new BufferedReader(new InputStreamReader(System.in)).readLine();
 
-            server.decapsulate(encapsulation);
+                server.decapsulate(encapsulation);
 
-            //Secret is now shared
+                //Secret is now shared
 
-            String plain = "This is a secret message.";
-            System.out.println("Original Text : " + plain);
+                String plain = "This is a secret message.";
+                System.out.println("Original Text : " + plain);
 
-            String encryptedText = client.encryptAES(plain);
-            System.out.println("Encrypted Text: " + encryptedText);
+                String encryptedText = client.encryptAES(plain);
+                System.out.println("Encrypted Text: " + encryptedText);
 
-            String plainText = server.decryptAES(encryptedText);
-            System.out.println("Decrypted Text: " + plainText);
+                String plainText = server.decryptAES(encryptedText);
+                System.out.println("Decrypted Text: " + plainText);
+            }
         }
         catch (Exception e)
         {

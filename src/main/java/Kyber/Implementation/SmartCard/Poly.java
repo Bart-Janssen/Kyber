@@ -191,23 +191,26 @@ public final class Poly {
         return msg;
     }
 
-    public static short[] getNoisePoly(byte[] seed, byte nonce, byte paramsK) {
+    //Smart card ok, needs optimization
+    public static short[] getNoisePoly(byte[] seed, byte nonce, byte paramsK)
+    {
         short l;
         byte[] p;
-        switch (paramsK) {
-            //Only kyber 512 for now
-            case 2: default:
+        switch (paramsK)
+        {
+            //this part is already supported for all three kyber
+            case 2:
                 l = KyberParams.paramsETAK512 * KyberParams.paramsN / 4;
                 break;
-//            default:
-//                l = KyberParams.paramsETAK768K1024 * KyberParams.paramsN / 4;
+            default:
+                l = KyberParams.paramsETAK768K1024 * KyberParams.paramsN / 4;
         }
-
         p = Poly.generatePRFByteArray(l, seed, nonce);
         return Poly.generateCBDPoly(p, paramsK);
     }
 
-    public static long convertByteTo24BitUnsignedInt(byte[] x) {
+    public static long convertByteTo24BitUnsignedInt(byte[] x)
+    {
         long r = (long) (x[0] & 0xFF);
         r = r | (long) ((long) (x[1] & 0xFF) << 8);
         r = r | (long) ((long) (x[2] & 0xFF) << 16);
@@ -222,23 +225,84 @@ public final class Poly {
         return r;
     }
 
-    public static short[] generateCBDPoly(byte[] buf, byte paramsK) {
-        long t, d; //both unsigned
-        int a, b;
+    public static void sumByteArrays(byte[] x, byte[] y)
+    {
+        short carry = 0;
+        for (byte i = 2; i >= 0; i--)
+        {
+            short temp = (short)((x[i]&0xFF) + (y[i]&0xFF) + carry);
+            x[i] = (byte)(temp&0xFF);
+            carry = (short)(temp>>8);
+        }
+    }
+
+    public static short[] generateCBDPoly(byte[] buf, byte paramsK)
+    {
+        byte[] d = new byte[3];
+        byte[] t = new byte[3];
+        byte[] tempT = new byte[3];
+
+        short a, b;
         short[] r = new short[KyberParams.paramsPolyBytes];
-        switch (paramsK) {
+        switch (paramsK)
+        {
             //Only kyber 512 for now
             case 2: default:
-                for (int i = 0; i < KyberParams.paramsN / 4; i++) {
-                    t = Poly.convertByteTo24BitUnsignedInt(Arrays.copyOfRange(buf, (3 * i), buf.length));
-                    d = t & 0x00249249;
-                    d = d + ((t >> 1) & 0x00249249);
-                    d = d + ((t >> 2) & 0x00249249);
-                    for (int j = 0; j < 4; j++) {
-                        a = (short) ((d >> (6 * j + 0)) & 0x7);
-                        b = (short) ((d >> (6 * j + KyberParams.paramsETAK512)) & 0x7);
-                        r[4 * i + j] = (short) (a - b);
-                    }
+                for (byte i = 0; i < KyberParams.paramsN / 4; i++)
+                {
+                    //t = Poly.convertByteTo24BitUnsignedInt(Arrays.copyOfRange(buf, (3 * i), buf.length));
+                    t[0] = buf[3*i+2];
+                    t[1] = buf[3*i+1];
+                    t[2] = buf[3*i+0];
+
+                    //t & 0x00249249
+                    d[0] = (byte)(t[0] & 0x24);
+                    d[1] = (byte)(t[1] & 0x92);
+                    d[2] = (byte)(t[2] & 0x49);
+
+                    //t >> 1
+                    t[2] = (byte)(((t[2]&0xFF)>>1) | ((t[1]&0xFF)<<7));
+                    t[1] = (byte)(((t[1]&0xFF)>>1) | ((t[0]&0xFF)<<7));
+                    t[0] = (byte)(((t[0]&0xFF)>>1));
+
+                    //(t >> 1) & 0x00249249
+                    tempT[0] = (byte)(t[0] & 0x24);
+                    tempT[1] = (byte)(t[1] & 0x92);
+                    tempT[2] = (byte)(t[2] & 0x49);
+
+                    //d = d + (t >> 1) & 0x00249249
+                    sumByteArrays(d,tempT);
+
+                    //t >> 1
+                    t[2] = (byte)(((t[2]&0xFF)>>1) | ((t[1]&0xFF)<<7));
+                    t[1] = (byte)(((t[1]&0xFF)>>1) | ((t[0]&0xFF)<<7));
+                    t[0] = (byte)(((t[0]&0xFF)>>1));
+
+                    //(t >> 1) & 0x00249249
+                    tempT[0] = (byte)(t[0] & 0x24);
+                    tempT[1] = (byte)(t[1] & 0x92);
+                    tempT[2] = (byte)(t[2] & 0x49);
+
+                    //d = d + (t >> 1) & 0x00249249
+                    sumByteArrays(d,tempT);
+
+                    //for (int j = 0; j < 4; j++) //replaced loop with static 4 assignments
+                    //See generateCBDPoly.txt
+                    a = (short)(((d[2]&0xFF)>>0) & 0x7);                          //a = (short)((d >> (6 * j + 0)) & 0x7);
+                    b = (short)((((d[1]&0xFF)<<5) | ((d[2]&0xFF)>>3)) & 0x7);//3  //b = (short)((d >> (6 * j + KyberParams.paramsETAK512)) & 0x7);
+                    r[4 * i + 0] = (short)(a - b);                                //r[4 * i + j] = (short)(a - b);
+
+                    a = (short)((((d[1]&0xFF)<<2) | ((d[2]&0xFF)>>6)) & 0x7);//6  //a = (short)((d >> (6 * j + 0)) & 0x7);
+                    b = (short)((((d[0]&0xFF)<<7) | ((d[1]&0xFF)>>1)) & 0x7);//9  //b = (short)((d >> (6 * j + KyberParams.paramsETAK512)) & 0x7);
+                    r[4 * i + 1] = (short)(a - b);                                //r[4 * i + j] = (short)(a - b);
+
+                    a = (short)((((d[0]&0xFF)<<4) | ((d[1]&0xFF)>>4)) & 0x7);//12 //a = (short)((d >> (6 * j + 0)) & 0x7);
+                    b = (short)((((d[0]&0xFF)<<1) | ((d[1]&0xFF)>>7)) & 0x7);//15 //b = (short)((d >> (6 * j + KyberParams.paramsETAK512)) & 0x7);
+                    r[4 * i + 2] = (short)(a - b);                                //r[4 * i + j] = (short)(a - b);
+
+                    a = (short)(((d[0]&0xFF)>>2) & 0x7);//18                      //a = (short)((d >> (6 * j + 0)) & 0x7);
+                    b = (short)(((d[0]&0xFF)>>5) & 0x7);//21                      //b = (short)((d >> (6 * j + KyberParams.paramsETAK512)) & 0x7);
+                    r[4 * i + 3] = (short)(a - b);                                //r[4 * i + j] = (short)(a - b);
                 }
                 break;
 //            default:
@@ -256,10 +320,12 @@ public final class Poly {
         return r;
     }
 
-    public static byte[] generatePRFByteArray(short l, byte[] key, byte nonce) {
+    //smart card ok, need optimization
+    public static byte[] generatePRFByteArray(short l, byte[] key, byte nonce)
+    {
         byte[] hash = new byte[l];
-        byte[] newKey = new byte[key.length + 1];
-        System.arraycopy(key, 0, newKey, 0, key.length);
+        byte[] newKey = new byte[(byte)(key.length + 1)];
+        Util.arrayCopyNonAtomic(key, (short)0, newKey, (short)0, (short)key.length);
         newKey[key.length] = nonce;
         Keccak keccak = Keccak.getInstance(Keccak.ALG_SHAKE_256);
         keccak.setShakeDigestLength(l);

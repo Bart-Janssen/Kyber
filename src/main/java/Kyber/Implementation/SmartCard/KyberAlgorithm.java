@@ -22,7 +22,7 @@ public class KyberAlgorithm
     protected KyberAlgorithm(byte paramsK)
     {
         this.paramsK = paramsK;
-        keyPair = KeyPair.getInstance(paramsK);
+        this.keyPair = KeyPair.getInstance(paramsK);
     }
 
     private static KyberAlgorithm kyber;
@@ -36,6 +36,9 @@ public class KyberAlgorithm
     byte paramsK;
     private Keccak keccak;
     private KeyPair keyPair;
+
+    private short[] uniformR;
+    private short uniformI = 0;
     
     //phase 2
 //    public KyberEncrypted encapsulate(byte[] variant, byte[] publicKey, byte paramsK) throws Exception
@@ -157,18 +160,17 @@ public class KyberAlgorithm
 //        return packCiphertext(bp, Poly.polyReduce(v), paramsK);
 //    }
 
-    //phase 1
+    //phase 1 smart card ok, need optimization
     //r = array 1 || array 1.1 || array 1.2 || array 2 || array 2.1 || array 2.2 || array 3 || array 3.1 ...
-    public short[] generateMatrix(byte[] seed, boolean transposed, byte paramsK)
+    public short[] generateMatrix(byte[] seed, boolean transposed)
     {
         //2*2*384 = 1536
-        short[] r = new short[paramsK*paramsK*KyberParams.paramsPolyBytes];
+        short[] r = new short[(short)(this.paramsK*this.paramsK*KyberParams.paramsPolyBytes)];
         byte[] buf = new byte[672];
-        KyberUniformRandom uniformRandom = new KyberUniformRandom();
-        keccak = Keccak.getInstance(Keccak.ALG_SHAKE_128);
-        for (byte i = 0; i < paramsK; i++)
+        this.keccak = Keccak.getInstance(Keccak.ALG_SHAKE_128);
+        for (byte i = 0; i < this.paramsK; i++)
         {
-            for (byte j = 0; j < paramsK; j++)
+            for (byte j = 0; j < this.paramsK; j++)
             {
                 byte[] ij = new byte[2];
                 if (transposed)
@@ -181,25 +183,28 @@ public class KyberAlgorithm
                     ij[0] = j;
                     ij[1] = i;
                 }
-                byte[] seedAndij = new byte[seed.length + ij.length];
-                System.arraycopy(seed, 0, seedAndij, 0, seed.length);
-                System.arraycopy(ij, 0, seedAndij, seed.length, ij.length);
-                keccak.reset();
-                keccak.setShakeDigestLength((short)buf.length);
-                keccak.doFinal(seedAndij, buf);
-                generateUniform(uniformRandom, Arrays.copyOfRange(buf, 0, 504), 504, KyberParams.paramsN);
-                int ui = uniformRandom.getUniformI();
-                System.arraycopy(uniformRandom.getUniformR(), 0, r, ((i*2)+j)*384, 384);
-                while (ui < KyberParams.paramsN)
+                byte[] seedAndij = new byte[(short)(seed.length + ij.length)];
+                Util.arrayCopyNonAtomic(seed, (short)0, seedAndij, (short)0, (short)seed.length);
+                Util.arrayCopyNonAtomic(ij, (short)0, seedAndij, (short)seed.length, (short)ij.length);
+                this.keccak.reset();
+                this.keccak.setShakeDigestLength((short)buf.length);
+                this.keccak.doFinal(seedAndij, buf);
+                byte[] buff = new byte[672];
+                Util.arrayCopyNonAtomic(buf,(short)0, buff,(short)0, (short)504);
+                this.generateUniform(buff, (short)504, KyberParams.paramsN);
+                short ui = this.uniformI;
+                Poly.arrayCopyNonAtomic(this.uniformR, (short)0, r, (short)(((i*2)+j)*384), (short)384);
+                while (ui < KyberParams.paramsN)//Occasionally, this code is not always executed
                 {
-                    generateUniform(uniformRandom, Arrays.copyOfRange(buf, 504, 672), 168, KyberParams.paramsN - ui);
-                    int ctrn = uniformRandom.getUniformI();
-                    short[] missing = uniformRandom.getUniformR();
-                    for (int k = ui; k < KyberParams.paramsN; k++)
+                    Util.arrayCopyNonAtomic(buf,(short)504, buff,(short)0, (short)168);
+                    this.generateUniform(buff, (short)168, (short)(KyberParams.paramsN - ui));
+                    short ctrn = this.uniformI;
+                    short[] missing = this.uniformR;
+                    for (short k = ui; k < KyberParams.paramsN; k++)
                     {
-                        r[((i * 2 + j) * 384) + k] = missing[k - ui];
+                        r[(short)(((i * 2 + j) * 384) + k)] = missing[(short)(k - ui)];
                     }
-                    ui = ui + ctrn;
+                    ui += ctrn;
                 }
             }
         }
@@ -281,17 +286,17 @@ public class KyberAlgorithm
         this.keccak.doFinal(publicSeed, fullSeed);
         Util.arrayCopyNonAtomic(fullSeed, (short)0, publicSeed, (short)0, KyberParams.paramsSymBytes);
         Util.arrayCopyNonAtomic(fullSeed, KyberParams.paramsSymBytes, noiseSeed, (short)0, KyberParams.paramsSymBytes);
-        short[] a = generateMatrix(publicSeed, false, paramsK);
+        short[] a = this.generateMatrix(publicSeed, false);
         byte nonce = (byte) 0;
         for (byte i = 0; i < paramsK; i++)
         {
             Poly.arrayCopyNonAtomic(Poly.getNoisePoly(noiseSeed, nonce, paramsK), (short)0, skpv, (short)(i*KyberParams.paramsPolyBytes), KyberParams.paramsPolyBytes);
-            nonce = (byte) (nonce + (byte) 1);
+            nonce = (byte)(nonce + (byte)1);
         }
         for (byte i = 0; i < paramsK; i++)
         {
             Poly.arrayCopyNonAtomic(Poly.getNoisePoly(noiseSeed, nonce, paramsK), (short)0, e, (short)(i*KyberParams.paramsPolyBytes), KyberParams.paramsPolyBytes);
-            nonce = (byte) (nonce + (byte) 1);
+            nonce = (byte)(nonce + (byte)1);
         }
         skpv = Poly.polyVectorNTT(skpv, paramsK);
         skpv = Poly.polyVectorReduce(skpv, paramsK);
@@ -310,32 +315,35 @@ public class KyberAlgorithm
         keyPair.setPublicKey(this.packPublicKey(pkpv, publicSeed, paramsK));
     }
 
-    //phase 1
-    public void generateUniform(KyberUniformRandom uniformRandom, byte[] buf, int bufl, int l)
+    //phase 1 smart card ok, need optimizing
+    public void generateUniform(byte[] buf, short bufl, short l)
     {
         short[] uniformR = new short[KyberParams.paramsPolyBytes];
-        int d1;
-        int d2;
-        int uniformI = 0; // Always start at 0
-        int j = 0;
-        while ((uniformI < l) && ((j + 3) <= bufl))
+        short d1;
+        short d2;
+        short uniformI = 0; // Always start at 0
+        short j = 0;
+        while ((uniformI < l) && ((short)(j + 3) <= bufl))
         {
-            d1 = (int) (((((int) (buf[j] & 0xFF)) >> 0) | (((int) (buf[j + 1] & 0xFF)) << 8)) & 0xFFF);
-            d2 = (int) (((((int) (buf[j + 1] & 0xFF)) >> 4) | (((int) (buf[j + 2] & 0xFF)) << 4)) & 0xFFF);
-            j = j + 3;
-            if (d1 < (int) KyberParams.paramsQ)
+            d1 = (short)(((buf[j] & 0xFF) | ((buf[(short)(j + 1)] & 0xFF) << 8)) & 0xFFF);
+            d2 = (short)((((buf[(short)(j + 1)] & 0xFF) >> 4) | ((buf[(short)(j + 2)] & 0xFF) << 4)) & 0xFFF);
+
+            j+=3;
+            if (d1 < KyberParams.paramsQ)
             {
-                uniformR[uniformI] = (short) d1;
+                uniformR[uniformI] = d1;
                 uniformI++;
             }
-            if (uniformI < l && d2 < (int) KyberParams.paramsQ)
+            if (uniformI < l && d2 < KyberParams.paramsQ)
             {
-                uniformR[uniformI] = (short) d2;
+                uniformR[uniformI] = d2;
                 uniformI++;
             }
         }
-        uniformRandom.setUniformI(uniformI);
-        uniformRandom.setUniformR(uniformR);
+//        uniformRandom.setUniformI(uniformI);
+//        uniformRandom.setUniformR(uniformR);
+        this.uniformI = uniformI;
+        this.uniformR = uniformR;
     }
 
     //phase 1
