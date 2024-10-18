@@ -193,7 +193,7 @@ public class KyberAlgorithm
                 Util.arrayCopyNonAtomic(buf,(short)0, buff,(short)0, (short)504);
                 this.generateUniform(buff, (short)504, KyberParams.paramsN);
                 short ui = this.uniformI;
-                Poly.arrayCopyNonAtomic(this.uniformR, (short)0, r, (short)(((i*2)+j)*384), (short)384);
+                Poly.getInstance().arrayCopyNonAtomic(this.uniformR, (short)0, r, (short)(((i*2)+j)*384), (short)384);
                 while (ui < KyberParams.paramsN)//Occasionally, this code is not always executed
                 {
                     Util.arrayCopyNonAtomic(buf,(short)504, buff,(short)0, (short)168);
@@ -273,9 +273,9 @@ public class KyberAlgorithm
     //phase 1
     public void generateKyberKeys() throws Exception
     {
-        short[] skpv = Poly.generateNewPolyVector(this.paramsK);
-        short[] pkpv = Poly.generateNewPolyVector(this.paramsK);
-        short[] e = Poly.generateNewPolyVector(this.paramsK);
+        short[] skpv = Poly.getInstance().generateNewPolyVector(this.paramsK);
+        short[] pkpv = Poly.getInstance().generateNewPolyVector(this.paramsK);
+        short[] e = Poly.getInstance().generateNewPolyVector(this.paramsK);
         byte[] publicSeed = JCSystem.makeTransientByteArray(KyberParams.paramsSymBytes, JCSystem.CLEAR_ON_DESELECT);
         byte[] noiseSeed = new byte[KyberParams.paramsSymBytes];
         this.keccak = Keccak.getInstance(Keccak.ALG_SHA3_512);
@@ -290,26 +290,26 @@ public class KyberAlgorithm
         byte nonce = (byte) 0;
         for (byte i = 0; i < paramsK; i++)
         {
-            Poly.arrayCopyNonAtomic(Poly.getNoisePoly(noiseSeed, nonce, paramsK), (short)0, skpv, (short)(i*KyberParams.paramsPolyBytes), KyberParams.paramsPolyBytes);
+            Poly.getInstance().arrayCopyNonAtomic(Poly.getInstance().getNoisePoly(noiseSeed, nonce, paramsK), (short)0, skpv, (short)(i*KyberParams.paramsPolyBytes), KyberParams.paramsPolyBytes);
             nonce = (byte)(nonce + (byte)1);
         }
         for (byte i = 0; i < paramsK; i++)
         {
-            Poly.arrayCopyNonAtomic(Poly.getNoisePoly(noiseSeed, nonce, paramsK), (short)0, e, (short)(i*KyberParams.paramsPolyBytes), KyberParams.paramsPolyBytes);
+            Poly.getInstance().arrayCopyNonAtomic(Poly.getInstance().getNoisePoly(noiseSeed, nonce, paramsK), (short)0, e, (short)(i*KyberParams.paramsPolyBytes), KyberParams.paramsPolyBytes);
             nonce = (byte)(nonce + (byte)1);
         }
-        skpv = Poly.polyVectorNTT(skpv, paramsK);
-        skpv = Poly.polyVectorReduce(skpv, paramsK);
-        e = Poly.polyVectorNTT(e, paramsK);
+        skpv = Poly.getInstance().polyVectorNTT(skpv, paramsK);
+        skpv = Poly.getInstance().polyVectorReduce(skpv, paramsK);
+        e = Poly.getInstance().polyVectorNTT(e, paramsK);
         for (byte i = 0; i < paramsK; i++)
         {
             short[] polyArow = new short[384*paramsK];
             System.arraycopy(a, i*paramsK*384, polyArow,0,384*paramsK);
-            short[] temp = Poly.polyVectorPointWiseAccMont(polyArow, skpv, paramsK);
-            Poly.arrayCopyNonAtomic(Poly.polyToMont(temp), (short)0, pkpv, (short)(i*KyberParams.paramsPolyBytes), KyberParams.paramsPolyBytes);
+            short[] temp = Poly.getInstance().polyVectorPointWiseAccMont(polyArow, skpv, paramsK);
+            Poly.getInstance().arrayCopyNonAtomic(Poly.getInstance().polyToMont(temp), (short)0, pkpv, (short)(i*KyberParams.paramsPolyBytes), KyberParams.paramsPolyBytes);
         }
-        pkpv = Poly.polyVectorAdd(pkpv, e, paramsK);
-        pkpv = Poly.polyVectorReduce(pkpv, paramsK);
+        pkpv = Poly.getInstance().polyVectorAdd(pkpv, e, paramsK);
+        pkpv = Poly.getInstance().polyVectorReduce(pkpv, paramsK);
         KeyPair keyPair = KeyPair.getInstance(paramsK);
         keyPair.setPrivateKey(this.packPrivateKey(skpv, paramsK));
         keyPair.setPublicKey(this.packPublicKey(pkpv, publicSeed, paramsK));
@@ -349,14 +349,14 @@ public class KyberAlgorithm
     //phase 1
     public byte[] packPrivateKey(short[] privateKey, byte paramsK)
     {
-        return Poly.polyVectorToBytes(privateKey, paramsK);
+        return Poly.getInstance().polyVectorToBytes(privateKey, paramsK);
     }
 
     //phase 1
 
     public byte[] packPublicKey(short[] publicKey, byte[] seed, byte paramsK)
     {
-        byte[] initialArray = Poly.polyVectorToBytes(publicKey, paramsK);
+        byte[] initialArray = Poly.getInstance().polyVectorToBytes(publicKey, paramsK);
         byte[] packedPublicKey;
         switch (paramsK)
         {
