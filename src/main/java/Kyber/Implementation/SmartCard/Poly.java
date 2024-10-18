@@ -368,7 +368,7 @@ public final class Poly
     {
         //(long) ((long) a * (long) b)
         Arithmetic.multiplyShorts(a,b, jc);
-        return montgomeryReduce(jc);
+        return this.montgomeryReduce(jc);
     }
 
     //smart card ok, optimize jc away
@@ -387,7 +387,8 @@ public final class Poly
         return jc[0];
     }
 
-    public short[] polyInvNTTMont(short[] r) {
+    public short[] polyInvNTTMont(short[] r)
+    {
         return this.invNTT(r);
     }
 
@@ -412,50 +413,52 @@ public final class Poly
         return r;
     }
 
+    //smart card ok
     //Optimize return as void since it returns input anyway
-    public short[] polyBaseMulMont(short[] polyA, short[] polyB) {
-        for (int i = 0; i < KyberParams.paramsN / 4; i++) {
+    public short[] polyBaseMulMont(short[] polyA, short[] polyB)
+    {
+        for (byte i = 0; i < (KyberParams.paramsN / 4); i++)
+        {
             short[] rx = this.baseMultiplier(
-                    polyA[4 * i + 0], polyA[4 * i + 1],
-                    polyB[4 * i + 0], polyB[4 * i + 1],
-                    (short) Poly.nttZetas[64 + i]
+                    polyA[(short)(4 * i + 0)], polyA[(short)(4 * i + 1)],
+                    polyB[(short)(4 * i + 0)], polyB[(short)(4 * i + 1)],
+                    Poly.nttZetas[64 + i]
             );
             short[] ry = this.baseMultiplier(
-                    polyA[4 * i + 2], polyA[4 * i + 3],
-                    polyB[4 * i + 2], polyB[4 * i + 3],
-                    (short) (-1 * Poly.nttZetas[64 + i])
+                    polyA[(short)(4 * i + 2)], polyA[(short)(4 * i + 3)],
+                    polyB[(short)(4 * i + 2)], polyB[(short)(4 * i + 3)],
+                    (short)(-1 * Poly.nttZetas[(short)(64 + i)])
             );
-            polyA[4 * i + 0] = rx[0];
-            polyA[4 * i + 1] = rx[1];
-            polyA[4 * i + 2] = ry[0];
-            polyA[4 * i + 3] = ry[1];
+            polyA[(short)(4 * i + 0)] = rx[0];
+            polyA[(short)(4 * i + 1)] = rx[1];
+            polyA[(short)(4 * i + 2)] = ry[0];
+            polyA[(short)(4 * i + 3)] = ry[1];
         }
         return polyA;
     }
 
-    public short[] baseMultiplier(short a0, short a1, short b0, short b1, short zeta) {
+    //smart card ok
+    public short[] baseMultiplier(short a0, short a1, short b0, short b1, short zeta)
+    {
         short[] r = new short[2];
         r[0] = this.modQMulMont(a1, b1);
         r[0] = this.modQMulMont(r[0], zeta);
-        r[0] = (short) (r[0] + this.modQMulMont(a0, b0));
+        r[0] = (short)(r[0] + this.modQMulMont(a0, b0));
         r[1] = this.modQMulMont(a0, b1);
-        r[1] = (short) (r[1] + this.modQMulMont(a1, b0));
+        r[1] = (short)(r[1] + this.modQMulMont(a1, b0));
         return r;
     }
 
-    public short[] polyToMont(short[] polyR) {
-        for (int i = 0; i < KyberParams.paramsN; i++) {
-            polyR[i] = this.montgomeryReduce((int) (polyR[i] * 1353));
+    //smart card ok
+    public short[] polyToMont(short[] polyR)
+    {
+        for (short i = 0; i < KyberParams.paramsN; i++)
+        {
+            //polyR[i] = this.montgomeryReduce((int) (polyR[i] * 1353));
+            Arithmetic.multiplyShorts(polyR[i],(short)1353, jc);
+            polyR[i] = this.montgomeryReduce(jc);
         }
         return polyR;
-    }
-
-    public short montgomeryReduce(int a) {
-        short u = (short) (a * KyberParams.paramsQinv);
-        int t = (int) (u * KyberParams.paramsQ);
-        t = (int) (a - t);
-        t >>= 16;
-        return (short) t;
     }
 
     //smart card ok
@@ -496,9 +499,12 @@ public final class Poly
         return a;
     }
 
-    public short[] polyAdd(short[] polyA, short[] polyB) {
-        for (int i = 0; i < KyberParams.paramsN; i++) {
-            polyA[i] = (short) (polyA[i] + polyB[i]);
+    //smart card ok, opt polyA
+    public short[] polyAdd(short[] polyA, short[] polyB)
+    {
+        for (short i = 0; i < KyberParams.paramsN; i++)
+        {
+            polyA[i] = (short)(polyA[i] + polyB[i]);
         }
         return polyA;
     }
@@ -655,7 +661,7 @@ public final class Poly
             //i=1, row = 384, 1*384 = 384 -> 768
             short[] row = new short[(short)384];
             this.arrayCopyNonAtomic(r, (short)(i * (short)384), row, (short)0, (short)384);
-            row = polyNTT(row);
+            row = this.polyNTT(row);
             this.arrayCopyNonAtomic(row, (short)0, r, (short)(i * (short)384), (short)384);
         }
         return r;
@@ -668,6 +674,7 @@ public final class Poly
         return r;
     }
 
+    //smart card ok
     public short[] polyVectorPointWiseAccMont(short[] polyA, short[] polyB, byte paramsK)
     {
         short rowSize = 384;
@@ -685,7 +692,7 @@ public final class Poly
             short[] t = this.polyBaseMulMont(Arow, Brow);
             r = this.polyAdd(r, t);
         }
-        return polyReduce(r);
+        return this.polyReduce(r);
     }
 
     ////smart card ok, need opt
@@ -698,7 +705,7 @@ public final class Poly
             //i=1, row = 384, 1*384 = 384 -> 768
             short[] row = new short[(short)384];
             this.arrayCopyNonAtomic(r, (short)(i * (short)384), row, (short)0, (short)384);
-            row = polyReduce(row);
+            row = this.polyReduce(row);
             this.arrayCopyNonAtomic(row, (short)0, r, (short)(i * (short)384), (short)384);
         }
         return r;
@@ -711,6 +718,7 @@ public final class Poly
         return r;
     }
 
+    //smart card ok
     public short[] polyVectorAdd(short[] polyA, short[] polyB, byte paramsK)
     {
         short rowSize = 384;
@@ -718,7 +726,7 @@ public final class Poly
         {
             for (short j = 0; j < rowSize; j++)
             {
-                polyA[(i * rowSize) + j] += polyB[(i * rowSize) + j];
+                polyA[(short)((i * rowSize) + j)] += polyB[(short)((i * rowSize) + j)];
             }
         }
         return polyA;

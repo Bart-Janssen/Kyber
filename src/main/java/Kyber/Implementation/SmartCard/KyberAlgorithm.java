@@ -245,7 +245,7 @@ public class KyberAlgorithm
 //        return variant;
 //    }
 
-//    //phase 1 Smart card ok
+    //smart card ok, need opt
     public void generateKeys(short privateKeyBytes) throws Exception
     {
         this.generateKyberKeys();
@@ -271,6 +271,7 @@ public class KyberAlgorithm
     }
 
     //phase 1
+    //smart card ok, need opt
     public void generateKyberKeys() throws Exception
     {
         short[] skpv = Poly.getInstance().generateNewPolyVector(this.paramsK);
@@ -303,8 +304,8 @@ public class KyberAlgorithm
         e = Poly.getInstance().polyVectorNTT(e, paramsK);
         for (byte i = 0; i < paramsK; i++)
         {
-            short[] polyArow = new short[384*paramsK];
-            System.arraycopy(a, i*paramsK*384, polyArow,0,384*paramsK);
+            short[] polyArow = new short[(short)(384*paramsK)];
+            Poly.getInstance().arrayCopyNonAtomic(a, (short)(i*paramsK*384), polyArow,(short)0,(short)(384*paramsK));
             short[] temp = Poly.getInstance().polyVectorPointWiseAccMont(polyArow, skpv, paramsK);
             Poly.getInstance().arrayCopyNonAtomic(Poly.getInstance().polyToMont(temp), (short)0, pkpv, (short)(i*KyberParams.paramsPolyBytes), KyberParams.paramsPolyBytes);
         }
@@ -327,7 +328,6 @@ public class KyberAlgorithm
         {
             d1 = (short)(((buf[j] & 0xFF) | ((buf[(short)(j + 1)] & 0xFF) << 8)) & 0xFFF);
             d2 = (short)((((buf[(short)(j + 1)] & 0xFF) >> 4) | ((buf[(short)(j + 2)] & 0xFF) << 4)) & 0xFFF);
-
             j+=3;
             if (d1 < KyberParams.paramsQ)
             {
@@ -340,20 +340,19 @@ public class KyberAlgorithm
                 uniformI++;
             }
         }
-//        uniformRandom.setUniformI(uniformI);
-//        uniformRandom.setUniformR(uniformR);
         this.uniformI = uniformI;
         this.uniformR = uniformR;
     }
 
     //phase 1
+    //smart card ok
     public byte[] packPrivateKey(short[] privateKey, byte paramsK)
     {
         return Poly.getInstance().polyVectorToBytes(privateKey, paramsK);
     }
 
     //phase 1
-
+    //smart card ok, need opt
     public byte[] packPublicKey(short[] publicKey, byte[] seed, byte paramsK)
     {
         byte[] initialArray = Poly.getInstance().polyVectorToBytes(publicKey, paramsK);
@@ -363,8 +362,8 @@ public class KyberAlgorithm
             //Only kyber 512 for now
             case 2: default:
             packedPublicKey = new byte[KyberParams.paramsIndcpaPublicKeyBytesK512];
-            System.arraycopy(initialArray, 0, packedPublicKey, 0, initialArray.length);
-            System.arraycopy(seed, 0, packedPublicKey, initialArray.length, seed.length);
+            Util.arrayCopyNonAtomic(initialArray, (short)0, packedPublicKey, (short)0, (short)initialArray.length);
+            Util.arrayCopyNonAtomic(seed, (short)0, packedPublicKey, (short)initialArray.length, (short)seed.length);
             return packedPublicKey;
 //            case 3:
 //                packedPublicKey = new byte[KyberParams.paramsIndcpaPublicKeyBytesK768];
