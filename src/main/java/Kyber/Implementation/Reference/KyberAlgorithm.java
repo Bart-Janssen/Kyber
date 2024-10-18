@@ -9,7 +9,7 @@ import java.util.Arrays;
 
 public class KyberAlgorithm
 {
-    public KyberEncrypted encrypt512(byte[] variant, byte[] publicKey) throws Exception
+    public static KyberEncrypted encrypt512(byte[] variant, byte[] publicKey) throws Exception
     {
         variant = verifyVariant(variant);
         int paramsK = 2;
@@ -24,7 +24,7 @@ public class KyberAlgorithm
         byte[] kr = md512.digest(buf3);
         byte[] subKr = new byte[kr.length - KyberParams.paramsSymBytes];
         System.arraycopy(kr, KyberParams.paramsSymBytes, subKr, 0, subKr.length);
-        byte[] ciphertext = this.encrypt(buf1, publicKey, subKr, paramsK);
+        byte[] ciphertext = encrypt(buf1, publicKey, subKr, paramsK);
         byte[] krc = md.digest(ciphertext);
         byte[] newKr = new byte[KyberParams.paramsSymBytes + krc.length];
         System.arraycopy(kr, 0, newKr, 0, KyberParams.paramsSymBytes);
@@ -35,7 +35,7 @@ public class KyberAlgorithm
         return new KyberEncrypted(ciphertext, sharedSecret);
     }
 
-    public KyberDecrypted decrypt512(byte[] ciphertext, byte[] privateKey) throws Exception
+    public static KyberDecrypted decrypt512(byte[] ciphertext, byte[] privateKey) throws Exception
     {
         int paramsK = 2;
         byte[] sharedSecretFixedLength = new byte[KyberParams.KyberSSBytes];
@@ -45,7 +45,7 @@ public class KyberAlgorithm
         System.arraycopy(privateKey, KyberParams.paramsIndcpaSecretKeyBytesK512, publicKey, 0, publicKey.length);
 
         //buf renamed to plain
-        byte[] plain = this.decrypt(ciphertext, indcpaPrivateKey, paramsK);
+        byte[] plain = decrypt(ciphertext, indcpaPrivateKey, paramsK);
         int ski = KyberParams.Kyber512SKBytes - 2 * KyberParams.paramsSymBytes;
         byte[] newBuf = new byte[plain.length + KyberParams.paramsSymBytes];
         System.arraycopy(plain, 0, newBuf, 0, plain.length);
@@ -54,8 +54,8 @@ public class KyberAlgorithm
         byte[] kr = md512.digest(newBuf);
         byte[] subKr = new byte[kr.length - KyberParams.paramsSymBytes];
         System.arraycopy(kr, KyberParams.paramsSymBytes, subKr, 0, subKr.length);
-        byte[] cmp = this.encrypt(plain, publicKey, subKr, paramsK);
-        byte fail = (byte) this.constantTimeCompare(ciphertext, cmp);
+        byte[] cmp = encrypt(plain, publicKey, subKr, paramsK);
+        byte fail = (byte) constantTimeCompare(ciphertext, cmp);
         MessageDigest md = MessageDigest.getInstance("SHA3-256");
         byte[] krh = md.digest(ciphertext);
         int index = KyberParams.Kyber512SKBytes - KyberParams.paramsSymBytes;
@@ -74,7 +74,7 @@ public class KyberAlgorithm
         return new KyberDecrypted(plain, sharedSecretFixedLength);
     }
 
-    public KyberEncrypted encrypt768(byte[] variant, byte[] publicKey) throws Exception
+    public static KyberEncrypted encrypt768(byte[] variant, byte[] publicKey) throws Exception
     {
         variant = verifyVariant(variant);
         int paramsK = 3;
@@ -89,7 +89,7 @@ public class KyberAlgorithm
         byte[] kr = md512.digest(buf3);
         byte[] subKr = new byte[kr.length - KyberParams.paramsSymBytes];
         System.arraycopy(kr, KyberParams.paramsSymBytes, subKr, 0, subKr.length);
-        byte[] ciphertext = this.encrypt(buf1, publicKey, subKr, paramsK);
+        byte[] ciphertext = encrypt(buf1, publicKey, subKr, paramsK);
         byte[] krc = md.digest(ciphertext);
         byte[] newKr = new byte[KyberParams.paramsSymBytes + krc.length];
         System.arraycopy(kr, 0, newKr, 0, KyberParams.paramsSymBytes);
@@ -100,7 +100,7 @@ public class KyberAlgorithm
         return new KyberEncrypted(ciphertext, sharedSecret);
     }
 
-    public KyberDecrypted decrypt768(byte[] encapsulation, byte[] privateKey) throws Exception
+    public static KyberDecrypted decrypt768(byte[] encapsulation, byte[] privateKey) throws Exception
     {
         int paramsK = 3;
         byte[] sharedSecretFixedLength = new byte[KyberParams.KyberSSBytes];
@@ -110,7 +110,7 @@ public class KyberAlgorithm
         System.arraycopy(privateKey, KyberParams.paramsIndcpaSecretKeyBytesK768, publicKey, 0, publicKey.length);
 
         //buf renamed to plain
-        byte[] plain = this.decrypt(encapsulation, indcpaPrivateKey, paramsK);
+        byte[] plain = decrypt(encapsulation, indcpaPrivateKey, paramsK);
         int ski = KyberParams.Kyber768SKBytes - 2 * KyberParams.paramsSymBytes;
         byte[] newBuf = new byte[plain.length + KyberParams.paramsSymBytes];
         System.arraycopy(plain, 0, newBuf, 0, plain.length);
@@ -119,8 +119,8 @@ public class KyberAlgorithm
         byte[] kr = md512.digest(newBuf);
         byte[] subKr = new byte[kr.length - KyberParams.paramsSymBytes];
         System.arraycopy(kr, KyberParams.paramsSymBytes, subKr, 0, subKr.length);
-        byte[] cmp = this.encrypt(plain, publicKey, subKr, paramsK);
-        byte fail = (byte) this.constantTimeCompare(encapsulation, cmp);
+        byte[] cmp = encrypt(plain, publicKey, subKr, paramsK);
+        byte fail = (byte) constantTimeCompare(encapsulation, cmp);
         // For security purposes, removed the "if" so it behaves the same whether it
         // worked or not.
         MessageDigest md = MessageDigest.getInstance("SHA3-256");
@@ -141,7 +141,7 @@ public class KyberAlgorithm
         return new KyberDecrypted(plain, sharedSecretFixedLength);
     }
 
-    public KyberEncrypted encrypt1024(byte[] variant, byte[] publicKey) throws Exception
+    public static KyberEncrypted encrypt1024(byte[] variant, byte[] publicKey) throws Exception
     {
         variant = verifyVariant(variant);
         int paramsK = 4;
@@ -156,7 +156,7 @@ public class KyberAlgorithm
         byte[] kr = md512.digest(buf3);
         byte[] subKr = new byte[kr.length - KyberParams.paramsSymBytes];
         System.arraycopy(kr, KyberParams.paramsSymBytes, subKr, 0, subKr.length);
-        byte[] ciphertext = this.encrypt(buf1, publicKey, subKr, paramsK);
+        byte[] ciphertext = encrypt(buf1, publicKey, subKr, paramsK);
         byte[] krc = md.digest(ciphertext);
         byte[] newKr = new byte[KyberParams.paramsSymBytes + krc.length];
         System.arraycopy(kr, 0, newKr, 0, KyberParams.paramsSymBytes);
@@ -167,7 +167,7 @@ public class KyberAlgorithm
         return new KyberEncrypted(ciphertext, sharedSecret);
     }
 
-    public KyberDecrypted decrypt1024(byte[] encapsulation, byte[] privateKey) throws Exception
+    public static KyberDecrypted decrypt1024(byte[] encapsulation, byte[] privateKey) throws Exception
     {
         int paramsK = 4;
         byte[] sharedSecretFixedLength = new byte[KyberParams.KyberSSBytes];
@@ -177,7 +177,7 @@ public class KyberAlgorithm
         System.arraycopy(privateKey, KyberParams.paramsIndcpaSecretKeyBytesK1024, publicKey, 0, publicKey.length);
 
         //renamed buf to plain
-        byte[] plain = this.decrypt(encapsulation, indcpaPrivateKey, paramsK);
+        byte[] plain = decrypt(encapsulation, indcpaPrivateKey, paramsK);
         int ski = KyberParams.Kyber1024SKBytes - 2 * KyberParams.paramsSymBytes;
         byte[] newBuf = new byte[plain.length + KyberParams.paramsSymBytes];
         System.arraycopy(plain, 0, newBuf, 0, plain.length);
@@ -186,8 +186,8 @@ public class KyberAlgorithm
         byte[] kr = md512.digest(newBuf);
         byte[] subKr = new byte[kr.length - KyberParams.paramsSymBytes];
         System.arraycopy(kr, KyberParams.paramsSymBytes, subKr, 0, subKr.length);
-        byte[] cmp = this.encrypt(plain, publicKey, subKr, paramsK);
-        byte fail = (byte) this.constantTimeCompare(encapsulation, cmp);
+        byte[] cmp = encrypt(plain, publicKey, subKr, paramsK);
+        byte fail = (byte) constantTimeCompare(encapsulation, cmp);
         // For security purposes, removed the "if" so it behaves the same whether it
         // worked or not.
         MessageDigest md = MessageDigest.getInstance("SHA3-256");
@@ -208,7 +208,7 @@ public class KyberAlgorithm
         return new KyberDecrypted(plain, sharedSecretFixedLength);
     }
 
-    public byte[] decrypt(byte[] packedCipherText, byte[] privateKey, int paramsK)
+    public static byte[] decrypt(byte[] packedCipherText, byte[] privateKey, int paramsK)
     {
         UnpackedCipherText unpackedCipherText = unpackCiphertext(packedCipherText, paramsK);
         short[][] bp = unpackedCipherText.getBp();
@@ -222,7 +222,7 @@ public class KyberAlgorithm
         return Poly.polyToMsg(mp);
     }
 
-    public UnpackedCipherText unpackCiphertext(byte[] c, int paramsK)
+    public static UnpackedCipherText unpackCiphertext(byte[] c, int paramsK)
     {
         UnpackedCipherText unpackedCipherText = new UnpackedCipherText();
         byte[] bpc;
@@ -247,13 +247,13 @@ public class KyberAlgorithm
         return unpackedCipherText;
     }
 
-    public short[][] unpackPrivateKey(byte[] packedPrivateKey, int paramsK)
+    public static short[][] unpackPrivateKey(byte[] packedPrivateKey, int paramsK)
     {
         short[][] unpackedPrivateKey = Poly.polyVectorFromBytes(packedPrivateKey, paramsK);
         return unpackedPrivateKey;
     }
 
-    public byte[] encrypt(byte[] m, byte[] publicKey, byte[] coins, int paramsK)
+    public static byte[] encrypt(byte[] m, byte[] publicKey, byte[] coins, int paramsK)
     {
         short[][] sp = Poly.generateNewPolyVector(paramsK);
         short[][] ep = Poly.generateNewPolyVector(paramsK);
@@ -285,7 +285,7 @@ public class KyberAlgorithm
         return packCiphertext(bp, Poly.polyReduce(v), paramsK);
     }
 
-    public UnpackedPublicKey unpackPublicKey(byte[] packedPublicKey, int paramsK)
+    public static UnpackedPublicKey unpackPublicKey(byte[] packedPublicKey, int paramsK)
     {
         UnpackedPublicKey unpackedKey = new UnpackedPublicKey();
         switch (paramsK)
@@ -305,7 +305,7 @@ public class KyberAlgorithm
         return unpackedKey;
     }
 
-    public short[][][] generateMatrix(byte[] seed, boolean transposed, int paramsK)
+    public static short[][][] generateMatrix(byte[] seed, boolean transposed, int paramsK)
     {
         short[][][] r = new short[paramsK][paramsK][KyberParams.paramsPolyBytes];
         byte[] buf = new byte[672];
@@ -350,7 +350,7 @@ public class KyberAlgorithm
         return r;
     }
 
-    public void generateUniform(KyberUniformRandom uniformRandom, byte[] buf, int bufl, int l)
+    public static void generateUniform(KyberUniformRandom uniformRandom, byte[] buf, int bufl, int l)
     {
         short[] uniformR = new short[KyberParams.paramsPolyBytes];
         int d1;
@@ -377,7 +377,7 @@ public class KyberAlgorithm
         uniformRandom.setUniformR(uniformR);
     }
 
-    public byte[] packCiphertext(short[][] b, short[] v, int paramsK)
+    public static byte[] packCiphertext(short[][] b, short[] v, int paramsK)
     {
         byte[] bCompress = Poly.compressPolyVector(b, paramsK);
         byte[] vCompress = Poly.compressPoly(v, paramsK);
@@ -387,7 +387,7 @@ public class KyberAlgorithm
         return returnArray;
     }
 
-    public int constantTimeCompare(byte[] x, byte[] y)
+    public static int constantTimeCompare(byte[] x, byte[] y)
     {
         if (x.length != y.length) return 1;
         byte v = 0;
@@ -398,7 +398,7 @@ public class KyberAlgorithm
         return Byte.compare(v, (byte) 0);
     }
 
-    private byte[] verifyVariant(byte[] variant) throws Exception
+    private static byte[] verifyVariant(byte[] variant) throws Exception
     {
         if (variant.length > KyberParams.paramsSymBytes)
         {
