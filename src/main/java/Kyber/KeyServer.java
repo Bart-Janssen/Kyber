@@ -26,8 +26,8 @@ public class KeyServer extends Server
         {
             KeyPair keyPair = new KyberReferenceService().generateKeys(super.mode);
             //Explicitly not using super.privateKey.
-            byte[] privateKey = keyPair.getPrivateKey();
-            super.publicKey = keyPair.getPublicKey();
+            byte[] privateKey = keyPair.privateKey;
+            super.publicKey = keyPair.publicKey;
 
             File outputFile = new File(publicKeyFile1);
             outputFile.delete();

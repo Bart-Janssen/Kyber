@@ -44,7 +44,6 @@ public class KyberSmartCard extends SmartCard
         byte[] random = new byte[32];
         SecureRandom.getInstanceStrong().nextBytes(random);
         //I will make random optional random for the algorithm.
-        Applet.getInstance().setSharedSecret(random);//optional
         Applet.getInstance().setPublicKey(publicKey, (byte)2);//optional
         if (mode == 512) return Applet.getInstance().encapsulate((byte)2);
 //        if (mode == 768) return new KyberAlgorithm().encrypt768(random, publicKey);

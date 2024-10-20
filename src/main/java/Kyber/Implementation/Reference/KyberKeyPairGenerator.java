@@ -16,15 +16,15 @@ public class KyberKeyPairGenerator
     {
         int paramsK = 2;
         KeyPair indcpaPKI = this.generateKyberKeys(paramsK);
-        byte[] packedPublicKey = indcpaPKI.getPublicKey();
-        byte[] packedPrivateKey = indcpaPKI.getPrivateKey();
+        byte[] packedPublicKey = indcpaPKI.publicKey;
+        byte[] packedPrivateKey = indcpaPKI.privateKey;
         byte[] privateKeyFixedLength = new byte[KyberParams.Kyber512SKBytes];
         MessageDigest md = MessageDigest.getInstance("SHA3-256");
         byte[] encodedHash = md.digest(packedPublicKey);
         byte[] pkh = new byte[encodedHash.length];
         System.arraycopy(encodedHash, 0, pkh, 0, encodedHash.length);
         byte[] rnd = new byte[KyberParams.paramsSymBytes];
-        rand.nextBytes(rnd);
+//        rand.nextBytes(rnd);
         int offsetEnd = packedPrivateKey.length;
         System.arraycopy(packedPrivateKey, 0, privateKeyFixedLength, 0, offsetEnd);
         System.arraycopy(packedPublicKey, 0, privateKeyFixedLength, offsetEnd, packedPublicKey.length);
@@ -39,8 +39,8 @@ public class KyberKeyPairGenerator
     {
         int paramsK = 3;
         KeyPair indcpaPKI = this.generateKyberKeys(paramsK);
-        byte[] packedPrivateKey = indcpaPKI.getPrivateKey();
-        byte[] packedPublicKey = indcpaPKI.getPublicKey();
+        byte[] packedPrivateKey = indcpaPKI.privateKey;
+        byte[] packedPublicKey = indcpaPKI.publicKey;
         byte[] privateKeyFixedLength = new byte[KyberParams.Kyber768SKBytes];
         MessageDigest md = MessageDigest.getInstance("SHA3-256");
 
@@ -65,8 +65,8 @@ public class KyberKeyPairGenerator
     {
         int paramsK = 4;
         KeyPair indcpaPKI = this.generateKyberKeys(paramsK);
-        byte[] packedPrivateKey = indcpaPKI.getPrivateKey();
-        byte[] packedPublicKey = indcpaPKI.getPublicKey();
+        byte[] packedPrivateKey = indcpaPKI.privateKey;
+        byte[] packedPublicKey = indcpaPKI.publicKey;
         byte[] privateKeyFixedLength = new byte[KyberParams.Kyber1024SKBytes];
         MessageDigest md = MessageDigest.getInstance("SHA3-256");
 
@@ -97,7 +97,7 @@ public class KyberKeyPairGenerator
 
         MessageDigest h = MessageDigest.getInstance("SHA3-512");
         SecureRandom sr = SecureRandom.getInstanceStrong();
-        sr.nextBytes(publicSeed);
+//        sr.nextBytes(publicSeed);
         byte[] fullSeed = h.digest(publicSeed);
 
         System.arraycopy(fullSeed, 0, publicSeed, 0, KyberParams.paramsSymBytes);

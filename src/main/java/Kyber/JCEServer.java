@@ -9,8 +9,8 @@ public class JCEServer extends Server
     {
         super(mode);
         KeyPair keyPair = new KyberReferenceService().generateKeys(super.mode);
-        super.privateKey = keyPair.getPrivateKey();
-        super.publicKey = keyPair.getPublicKey();
+        super.privateKey = keyPair.privateKey;
+        super.publicKey = keyPair.publicKey;
         System.out.print("[Server]  : Public Key length: " + super.publicKey.length + " | ");super.print(super.publicKey);
         System.out.print("[Server]  : Private Key length: " + super.privateKey.length + " | ");super.print(super.privateKey);
     }

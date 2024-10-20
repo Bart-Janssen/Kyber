@@ -5,8 +5,6 @@ import Kyber.Models.KeyPair;
 import Kyber.Models.KyberEncrypted;
 import Kyber.Models.KyberParams;
 
-import java.util.Arrays;
-
 //Fake applet
 public class Applet
 {
@@ -33,29 +31,24 @@ public class Applet
     //Fake apdu call to get public key
     public byte[] getPublicKey()
     {
-        return this.keyPair.getPublicKey();
+        return this.keyPair.publicKey;
     }
 
     //Fake apdu call to get private key (for as long this is not yet implemented in the smart card, will be removed at phase 3)
     public byte[] getPrivateKey()
     {
-        return this.keyPair.getPrivateKey();
+        return this.keyPair.privateKey;
     }
 
     public KyberEncrypted encapsulate(byte paramsK) throws Exception
     {
-        return KyberAlgorithm.getInstance(paramsK).encapsulate(this.sharedSecred, this.keyPair.getPublicKey());
-    }
-
-    public void setSharedSecret(byte[] random)
-    {
-        if (random.length != 32) throw new RuntimeException("Random must be 32 bytes");//APDU error
-        Util.arrayCopyNonAtomic(random, (short)0, this.sharedSecred, (short)0, (short)32);
+        KyberAlgorithm.getInstance(paramsK).encapsulate();
+        return new KyberEncrypted(KyberAlgorithm.getInstance(paramsK).cipheredText, KyberAlgorithm.getInstance(paramsK).secretKey);
     }
 
     public void setPublicKey(byte[] publicKey, byte paramsK)
     {
         this.keyPair = KeyPair.getInstance(paramsK);
-        this.keyPair.setPublicKey(publicKey);//through APDU
+        this.keyPair.publicKey = publicKey;//through APDU
     }
 }
