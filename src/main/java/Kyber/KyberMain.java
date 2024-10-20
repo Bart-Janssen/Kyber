@@ -1,6 +1,6 @@
 package Kyber;
 
-public class Kyber
+public class KyberMain
 {
     public static void main(String[] args)
     {
@@ -10,11 +10,11 @@ public class Kyber
             {
                 System.out.println(i);
 //                            Server server = new KeyServer(512, true, true);
-//            Server server = new JCEServer(512);
-                Server server = new SmartCardServer(512, true);
+                Server server = new JCEServer(512);
+//                Server server = new SmartCardServer(512, true);
 
 
-                Client client = new JCEClient(512);
+                Client client = new SmartCardClient(512, true);
                 client.setServerPublic(server.getPublic());
 
                 byte[] encapsulation = client.encapsulate();

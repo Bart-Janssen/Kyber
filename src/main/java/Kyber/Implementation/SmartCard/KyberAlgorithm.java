@@ -4,7 +4,6 @@ import Kyber.Implementation.SmartCard.dummy.JCSystem;
 import Kyber.Implementation.SmartCard.dummy.Util;
 import Kyber.Implementation.SmartCard.dummy.RandomData;
 import Kyber.Models.*;
-import java.util.Arrays;
 
 public class KyberAlgorithm
 {
@@ -41,36 +40,34 @@ public class KyberAlgorithm
     private short uniformI = 0;
     
     //phase 2
-//    public KyberEncrypted encapsulate(byte[] variant, byte[] publicKey, byte paramsK) throws Exception
-//    {
-//        Keccak keccak;
-//        variant = verifyVariant(variant);
-//        byte[] sharedSecret = new byte[KyberParams.paramsSymBytes];
-//        keccak = Keccak.getInstance(Keccak.ALG_SHA3_256);
-//        byte[] buf1 = new byte[32];
-//        keccak.doFinal(variant, buf1);
-//        byte[] buf2 = new byte[32];
-//        keccak.doFinal(publicKey, buf2);
-//        byte[] buf3 = new byte[buf1.length + buf2.length];
-//        System.arraycopy(buf1, 0, buf3, 0, buf1.length);
-//        System.arraycopy(buf2, 0, buf3, buf1.length, buf2.length);
-//        keccak = Keccak.getInstance(Keccak.ALG_SHA3_512);
-//        byte[] kr = new byte[64];
-//        keccak.doFinal(buf3, kr);
-//        byte[] subKr = new byte[kr.length - KyberParams.paramsSymBytes];
-//        System.arraycopy(kr, KyberParams.paramsSymBytes, subKr, 0, subKr.length);
-//        byte[] ciphertext = this.encrypt(buf1, publicKey, subKr, paramsK);
-//        keccak = Keccak.getInstance(Keccak.ALG_SHA3_256);
-//        byte[] krc = new byte[32];
-//        keccak.doFinal(ciphertext, krc);
-//        byte[] newKr = new byte[KyberParams.paramsSymBytes + krc.length];
-//        System.arraycopy(kr, 0, newKr, 0, KyberParams.paramsSymBytes);
-//        System.arraycopy(krc, 0, newKr, KyberParams.paramsSymBytes, krc.length);
-//        keccak = Keccak.getInstance(Keccak.ALG_SHAKE_256);
-//        keccak.setShakeDigestLength((short)32);
-//        keccak.doFinal(newKr, sharedSecret);
-//        return new KyberEncrypted(ciphertext, sharedSecret);
-//    }
+    public KyberEncrypted encapsulate(byte[] variant, byte[] publicKey) throws Exception
+    {
+        byte[] sharedSecret = new byte[KyberParams.paramsSymBytes];
+        this.keccak = Keccak.getInstance(Keccak.ALG_SHA3_256);
+        byte[] buf1 = new byte[32];
+        this.keccak.doFinal(variant, buf1);
+        byte[] buf2 = new byte[32];
+        this.keccak.doFinal(publicKey, buf2);
+        byte[] buf3 = new byte[buf1.length + buf2.length];
+        System.arraycopy(buf1, 0, buf3, 0, buf1.length);
+        System.arraycopy(buf2, 0, buf3, buf1.length, buf2.length);
+        this.keccak = Keccak.getInstance(Keccak.ALG_SHA3_512);
+        byte[] kr = new byte[64];
+        this.keccak.doFinal(buf3, kr);
+        byte[] subKr = new byte[kr.length - KyberParams.paramsSymBytes];
+        System.arraycopy(kr, KyberParams.paramsSymBytes, subKr, 0, subKr.length);
+        byte[] ciphertext = this.encrypt(buf1, publicKey, subKr);
+        this.keccak = Keccak.getInstance(Keccak.ALG_SHA3_256);
+        byte[] krc = new byte[32];
+        this.keccak.doFinal(ciphertext, krc);
+        byte[] newKr = new byte[KyberParams.paramsSymBytes + krc.length];
+        System.arraycopy(kr, 0, newKr, 0, KyberParams.paramsSymBytes);
+        System.arraycopy(krc, 0, newKr, KyberParams.paramsSymBytes, krc.length);
+        this.keccak = Keccak.getInstance(Keccak.ALG_SHAKE_256);
+        this.keccak.setShakeDigestLength((short)32);
+        this.keccak.doFinal(newKr, sharedSecret);
+        return new KyberEncrypted(ciphertext, sharedSecret);
+    }
 
     //phase 3
 //    public KyberDecrypted decapsulate(byte[] encapsulation, byte[] privateKey, byte paramsK, short secretKeyBytes, short publicKeyBytes, short privateKeyBytes) throws Exception
@@ -128,8 +125,9 @@ public class KyberAlgorithm
 //    }
 
     //phase 2
-//    public byte[] encrypt(byte[] m, byte[] publicKey, byte[] coins, byte paramsK)
-//    {
+    public byte[] encrypt(byte[] m, byte[] publicKey, byte[] coins)
+    {
+        return Kyber.Implementation.Reference.KyberAlgorithm.encrypt(m,publicKey,coins,this.paramsK);
 //        short[][] sp = Poly.generateNewPolyVector(paramsK);
 //        short[][] ep = Poly.generateNewPolyVector(paramsK);
 //        short[][] bp = Poly.generateNewPolyVector(paramsK);
@@ -158,7 +156,7 @@ public class KyberAlgorithm
 //        bp = Poly.polyVectorReduce(bp, paramsK);
 //
 //        return packCiphertext(bp, Poly.polyReduce(v), paramsK);
-//    }
+    }
 
     //phase 1 smart card ok, need optimization
     //r = array 1 || array 1.1 || array 1.2 || array 2 || array 2.1 || array 2.2 || array 3 || array 3.1 ...
@@ -223,7 +221,7 @@ public class KyberAlgorithm
 //        return Byte.compare(v, (byte) 0);
 //    }
 
-    //phase 2
+    //phase 2, makes sure variant is always 32 bytes, this function is ignored since we are always sure it is
 //    private byte[] verifyVariant(byte[] variant) throws Exception
 //    {
 //        if (variant.length > KyberParams.paramsSymBytes)
@@ -379,15 +377,16 @@ public class KyberAlgorithm
     }
 
     //phase 2
-//    public byte[] packCiphertext(short[][] b, short[] v, byte paramsK)
-//    {
+    public byte[] packCiphertext(short[][] b, short[] v, byte paramsK)
+    {
+        return Kyber.Implementation.Reference.KyberAlgorithm.packCiphertext(b,v,paramsK);
 //        byte[] bCompress = Poly.compressPolyVector(b, paramsK);
 //        byte[] vCompress = Poly.compressPoly(v, paramsK);
 //        byte[] returnArray = new byte[bCompress.length + vCompress.length];
 //        System.arraycopy(bCompress, 0, returnArray, 0, bCompress.length);
 //        System.arraycopy(vCompress, 0, returnArray, bCompress.length, vCompress.length);
 //        return returnArray;
-//    }
+    }
 
     //phase 3
 //    public UnpackedCipherText unpackCiphertext(byte[] c, byte paramsK)
@@ -423,8 +422,9 @@ public class KyberAlgorithm
 //    }
 
     //phase 2
-//    public static UnpackedPublicKey unpackPublicKey(byte[] packedPublicKey, byte paramsK)
-//    {
+    public static UnpackedPublicKey unpackPublicKey(byte[] packedPublicKey, byte paramsK)
+    {
+        return Kyber.Implementation.Reference.KyberAlgorithm.unpackPublicKey(packedPublicKey,paramsK);
 //        UnpackedPublicKey unpackedKey = new UnpackedPublicKey();
 //        switch (paramsK)
 //        {
@@ -442,5 +442,5 @@ public class KyberAlgorithm
 ////                unpackedKey.setSeed(Arrays.copyOfRange(packedPublicKey, KyberParams.paramsPolyvecBytesK1024, packedPublicKey.length));
 //        }
 //        return unpackedKey;
-//    }
+    }
 }

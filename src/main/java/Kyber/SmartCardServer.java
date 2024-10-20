@@ -27,9 +27,9 @@ public class SmartCardServer extends Server
     {
         try
         {
-            List<CardTerminal> readers = TerminalFactory.getDefault().terminals().list();
-            Card card = readers.get(0).connect("T=1");
-            this.smartCard = new KyberSmartCard(super.mode, card, showSmartCardLogging);
+//            List<CardTerminal> readers = TerminalFactory.getDefault().terminals().list();
+//            Card card = readers.get(0).connect("T=1");
+            this.smartCard = new KyberSmartCard(super.mode, null, showSmartCardLogging);
             this.smartCard.selectKyberApplet();
         }
         catch (Exception e)
