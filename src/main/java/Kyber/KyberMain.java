@@ -15,6 +15,7 @@ public class KyberMain
 
 
                 Client client = new SmartCardClient(512, true);
+//                Client client = new JCEClient(512);
                 client.setServerPublic(server.getPublic());
 
                 byte[] encapsulation = client.encapsulate();

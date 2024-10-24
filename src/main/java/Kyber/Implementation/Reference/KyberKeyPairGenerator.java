@@ -48,7 +48,7 @@ public class KyberKeyPairGenerator
         byte[] pkh = new byte[encodedHash.length];
         System.arraycopy(encodedHash, 0, pkh, 0, encodedHash.length);
         byte[] rnd = new byte[KyberParams.paramsSymBytes];
-        rand.nextBytes(rnd);
+//        rand.nextBytes(rnd);
 
         int offsetEnd = packedPrivateKey.length;
         System.arraycopy(packedPrivateKey, 0, privateKeyFixedLength, 0, offsetEnd);
@@ -74,7 +74,7 @@ public class KyberKeyPairGenerator
         byte[] pkh = new byte[encodedHash.length];
         System.arraycopy(encodedHash, 0, pkh, 0, encodedHash.length);
         byte[] rnd = new byte[KyberParams.paramsSymBytes];
-        rand.nextBytes(rnd);
+//        rand.nextBytes(rnd);
 
         int offsetEnd = packedPrivateKey.length;
         System.arraycopy(packedPrivateKey, 0, privateKeyFixedLength, 0, offsetEnd);

@@ -4,7 +4,6 @@ import Kyber.Implementation.SmartCard.dummy.JCSystem;
 import Kyber.Implementation.SmartCard.dummy.Util;
 import Kyber.Implementation.SmartCard.dummy.RandomData;
 import Kyber.Models.*;
-
 import java.util.Arrays;
 
 public class KyberAlgorithm
@@ -43,13 +42,16 @@ public class KyberAlgorithm
 
     public byte[] cipheredText;
     public byte[] secretKey;
+
+    private short[] publicKeyPolyvec;
+    private byte[] seed;
     
     //phase 2
     public void encapsulate() throws Exception
     {
         byte[] variant = new byte[32];
         RandomData.OneShot random = RandomData.OneShot.open(RandomData.ALG_TRNG);
-        random.nextBytes(variant, (short)0, (short)32);
+//        random.nextBytes(variant, (short)0, (short)32);
         random.close();
         byte[] publicKey = KeyPair.getInstance((byte)2).publicKey;
 
@@ -157,42 +159,38 @@ public class KyberAlgorithm
         return r;
     }
 
-    //phase 2
+    //phase 2 smart card ok
     public byte[] encrypt(byte[] m, byte[] publicKey, byte[] coins)
     {
-        short[][] sp = generateNewPolyVector(paramsK);
-        short[][] ep = generateNewPolyVector(paramsK);
-        short[][] bp = generateNewPolyVector(paramsK);
-        UnpackedPublicKey unpackedPublicKey = this.unpackPublicKey(publicKey, paramsK);
+        short[] sp = Poly.getInstance().generateNewPolyVector(paramsK);
+        short[] ep = Poly.getInstance().generateNewPolyVector(paramsK);
+        short[] bp = Poly.getInstance().generateNewPolyVector(paramsK);
         short[] k = Poly.getInstance().polyFromData(m);
-        //prio this one
-        short[][][] at = Kyber.Implementation.Reference.KyberAlgorithm.generateMatrix(Arrays.copyOfRange(unpackedPublicKey.getSeed(), 0, KyberParams.paramsSymBytes), true, paramsK);
-
+        this.unpackPublicKey(publicKey, paramsK);
+        byte[] partlySeed = new byte[KyberParams.paramsSymBytes];//Opt this away
+        Util.arrayCopyNonAtomic(this.seed, (short)0, partlySeed, (short)0, KyberParams.paramsSymBytes);
+        short[] at = this.generateMatrix(partlySeed, true);
         for (byte i = 0; i < paramsK; i++)
         {
-            //this cannot be replaced with here due to paramsK being 3, which is not implemented in generateCBDPoly()
-            sp[i] = Kyber.Implementation.Reference.Poly.getNoisePoly(coins, (i), paramsK);
-            ep[i] = Kyber.Implementation.Reference.Poly.getNoisePoly(coins, (byte) (i + paramsK), (byte)3);
+            Poly.getInstance().arrayCopyNonAtomic(Poly.getInstance().getNoisePoly(coins, i, paramsK), (short)0, sp,(short)(i*384),(short)384);
+            Poly.getInstance().arrayCopyNonAtomic(Poly.getInstance().getNoisePoly(coins, (byte)(i + paramsK), (byte)3), (short)0, ep,(short)(i*384),(short)384);
         }
-
-        //this cannot be replaced with here due to paramsK being 3, which is not implemented in generateCBDPoly()
-        short[] epp = Kyber.Implementation.Reference.Poly.getNoisePoly(coins, (byte) (paramsK * 2), (byte)3);
-        sp = polyVectorNTT(sp, paramsK);
-        sp = polyVectorReduce(sp, paramsK);
+        short[] epp = Poly.getInstance().getNoisePoly(coins, (byte)(paramsK * 2), (byte)3);
+        sp = Poly.getInstance().polyVectorNTT(sp,paramsK);
+        sp = Poly.getInstance().polyVectorReduce(sp,paramsK);
+        short[] polyArow = new short[(short)(384*paramsK)];
         for (byte i = 0; i < paramsK; i++)
         {
-            //at must be done first
-            bp[i] = Kyber.Implementation.Reference.Poly.polyVectorPointWiseAccMont(at[i], sp, paramsK);
+            Poly.getInstance().arrayCopyNonAtomic(at, (short)(i*paramsK*384), polyArow,(short)0,(short)(384*paramsK));
+            short[] temp = Poly.getInstance().polyVectorPointWiseAccMont(polyArow, sp, paramsK);
+            Poly.getInstance().arrayCopyNonAtomic(temp, (short)0,bp,(short)(i*384),(short)384);
         }
-        //at must be done first
-        short[] v = Kyber.Implementation.Reference.Poly.polyVectorPointWiseAccMont(unpackedPublicKey.getPublicKeyPolyvec(), sp, paramsK);
+        short[] v = Poly.getInstance().polyVectorPointWiseAccMont(this.publicKeyPolyvec, sp, paramsK);
         bp = Poly.getInstance().polyVectorInvNTTMont(bp, paramsK);
         v = Poly.getInstance().polyInvNTTMont(v);
-        //2d array first
-        bp = Kyber.Implementation.Reference.Poly.polyVectorAdd(bp, ep, paramsK);
+        bp = Poly.getInstance().polyVectorAdd(bp, ep, paramsK);
         v = Poly.getInstance().polyAdd(Poly.getInstance().polyAdd(v, epp), k);
-        //2d array first
-        bp = Kyber.Implementation.Reference.Poly.polyVectorReduce(bp, paramsK);
+        bp = Poly.getInstance().polyVectorReduce(bp, paramsK);
         return this.packCiphertext(bp, Poly.getInstance().polyReduce(v), paramsK);
     }
 
@@ -204,6 +202,7 @@ public class KyberAlgorithm
         short[] r = new short[(short)(this.paramsK*this.paramsK*KyberParams.paramsPolyBytes)];
         byte[] buf = new byte[672];
         this.keccak = Keccak.getInstance(Keccak.ALG_SHAKE_128);
+        byte[] buff = new byte[672];//why are there 2 bufs ?
         for (byte i = 0; i < this.paramsK; i++)
         {
             for (byte j = 0; j < this.paramsK; j++)
@@ -225,7 +224,6 @@ public class KyberAlgorithm
                 this.keccak.reset();
                 this.keccak.setShakeDigestLength((short)buf.length);
                 this.keccak.doFinal(seedAndij, buf);
-                byte[] buff = new byte[672];
                 Util.arrayCopyNonAtomic(buf,(short)0, buff,(short)0, (short)504);
                 this.generateUniform(buff, (short)504, KyberParams.paramsN);
                 short ui = this.uniformI;
@@ -415,13 +413,13 @@ public class KyberAlgorithm
     }
 
     //phase 2
-    public byte[] packCiphertext(short[][] b, short[] v, byte paramsK)
+    public byte[] packCiphertext(short[] b, short[] v, byte paramsK)
     {
         byte[] bCompress = Poly.getInstance().compressPolyVector(b, paramsK);
         byte[] vCompress = Poly.getInstance().compressPoly(v, paramsK);
-        byte[] returnArray = new byte[bCompress.length + vCompress.length];
-        System.arraycopy(bCompress, 0, returnArray, 0, bCompress.length);
-        System.arraycopy(vCompress, 0, returnArray, bCompress.length, vCompress.length);
+        byte[] returnArray = new byte[(short)(bCompress.length + vCompress.length)];
+        Util.arrayCopyNonAtomic(bCompress, (short)0, returnArray, (short)0, (short)bCompress.length);
+        Util.arrayCopyNonAtomic(vCompress, (short)0, returnArray, (short)bCompress.length, (short)vCompress.length);
         return returnArray;
     }
 
@@ -458,16 +456,18 @@ public class KyberAlgorithm
 //        return Poly.polyVectorFromBytes(packedPrivateKey, paramsK);
 //    }
 
-    //phase 2
-    public UnpackedPublicKey unpackPublicKey(byte[] packedPublicKey, byte paramsK)
+    //phase 2 smart card ok, check seed
+    public void unpackPublicKey(byte[] packedPublicKey, byte paramsK)
     {
-        UnpackedPublicKey unpackedKey = new UnpackedPublicKey();
         switch (paramsK)
         {
             //Only kyber 512 for now
             case 2: default:
-                unpackedKey.setPublicKeyPolyvec(Poly.getInstance().polyVectorFromBytes(Arrays.copyOfRange(packedPublicKey, 0, KyberParams.paramsPolyvecBytesK512), paramsK));
-                unpackedKey.setSeed(Arrays.copyOfRange(packedPublicKey, KyberParams.paramsPolyvecBytesK512, packedPublicKey.length));
+                byte[] partlyPublicKey = new byte[KyberParams.paramsPolyvecBytesK512];
+                Util.arrayCopyNonAtomic(packedPublicKey, (short)0, partlyPublicKey, (short)0, KyberParams.paramsPolyvecBytesK512);
+                this.publicKeyPolyvec = Poly.getInstance().polyVectorFromBytes(partlyPublicKey, paramsK);
+                this.seed = new byte[32];//is this always 32?
+                Util.arrayCopyNonAtomic(packedPublicKey, KyberParams.paramsPolyvecBytesK512, this.seed, (short)0, (short)32);
                 break;
 //            case 3:
 //                unpackedKey.setPublicKeyPolyvec(Poly.polyVectorFromBytes(Arrays.copyOfRange(packedPublicKey, 0, KyberParams.paramsPolyvecBytesK768), paramsK));
@@ -477,6 +477,5 @@ public class KyberAlgorithm
 //                unpackedKey.setPublicKeyPolyvec(Poly.polyVectorFromBytes(Arrays.copyOfRange(packedPublicKey, 0, KyberParams.paramsPolyvecBytesK1024), paramsK));
 //                unpackedKey.setSeed(Arrays.copyOfRange(packedPublicKey, KyberParams.paramsPolyvecBytesK1024, packedPublicKey.length));
         }
-        return unpackedKey;
     }
 }

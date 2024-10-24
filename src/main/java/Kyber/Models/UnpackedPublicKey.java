@@ -9,7 +9,8 @@ public class UnpackedPublicKey
         return publicKeyPolyvec;
     }
 
-    public void setPublicKeyPolyvec(short[][] publicKeyPolyvec) {
+    public void setPublicKeyPolyvec(short[][] publicKeyPolyvec)
+    {
         this.publicKeyPolyvec = publicKeyPolyvec;
     }
 

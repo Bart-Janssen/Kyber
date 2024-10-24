@@ -3,7 +3,6 @@ package Kyber.Implementation.SmartCard;
 import Kyber.Implementation.SmartCard.dummy.JCSystem;
 import Kyber.Implementation.SmartCard.dummy.Util;
 import Kyber.Models.KyberParams;
-import java.util.Arrays;
 
 public final class Poly
 {
@@ -17,11 +16,15 @@ public final class Poly
 
     private static short[] multiplied;
     private static short[] jc;
+    private static short[] result;
+    private static short[] RAM384;
 
     private Poly()
     {
         multiplied = JCSystem.makeTransientShortArray((short)2, JCSystem.CLEAR_ON_DESELECT);
         jc = JCSystem.makeTransientShortArray((short)2, JCSystem.CLEAR_ON_DESELECT);
+        result = JCSystem.makeTransientShortArray((short)2, JCSystem.CLEAR_ON_DESELECT);
+        RAM384 = JCSystem.makeTransientShortArray((short)384, JCSystem.CLEAR_ON_DESELECT);
     }
 
     protected static void print(byte[] data)
@@ -56,7 +59,8 @@ public final class Poly
             478, 3221, 3021, 996, 991, 958, 1869, 1522, 1628
     };
 
-    public final static short[] nttZetasInv = new short[]{
+    public final static short[] nttZetasInv = new short[]
+    {
             1701, 1807, 1460, 2371, 2338, 2333, 308, 108, 2851, 870, 854, 1510, 2535,
             1278, 1530, 1185, 1659, 1187, 3109, 874, 1335, 2111, 136, 1215, 2945, 1465,
             1285, 2007, 2719, 2726, 2232, 2512, 75, 156, 3000, 2911, 2980, 872, 2685,
@@ -71,25 +75,43 @@ public final class Poly
     protected short[] poly = new short[KyberParams.paramsPolyBytes];
     protected short[][] polyvec;
 
-    public byte[] compressPoly(short[] polyA, byte paramsK) {
+    //smart card ok, need opt
+    public byte[] compressPoly(short[] polyA, byte paramsK)
+    {
         byte[] t = new byte[8];
         polyA = this.polyConditionalSubQ(polyA);
-        int rr = 0;
+        short rr = 0;
         byte[] r;
-        switch (paramsK) {
+        switch (paramsK)
+        {
             //Only kyber 512 for now
             case 2:
             case 3: default:
                 r = new byte[KyberParams.paramsPolyCompressedBytesK768];
-                for (int i = 0; i < KyberParams.paramsN / 8; i++) {
-                    for (int j = 0; j < 8; j++) {
-                        t[j] = (byte) (((((polyA[8 * i + j]) << 4) + (KyberParams.paramsQ / 2)) / (KyberParams.paramsQ)) & 15);
+                for (byte i = 0; i < KyberParams.paramsN / 8; i++)
+                {
+                    for (byte j = 0; j < 8; j++)
+                    {
+                        //t[j] = (byte) (((((polyA[8 * i + j]) << 4) + (KyberParams.paramsQ / 2)) / (KyberParams.paramsQ)) & 15);
+
+                        //((polyA[8 * i + j]) << 4)
+                        short shHigh = (short)(polyA[(short)(8 * i + j)] >> 12);
+                        short shLow = (short)(polyA[(short)(8 * i + j)] << 4);
+
+                        //(((polyA[8 * i + j]) << 4) + (KyberParams.paramsQ / 2))
+                        Arithmetic.add(shHigh, shLow, (short)0, (short)(KyberParams.paramsQ / 2), result);
+
+                        //((((polyA[8 * i + j]) << 4) + (KyberParams.paramsQ / 2)) / (KyberParams.paramsQ))
+                        Arithmetic.divide(result[0], result[1], (short)0, KyberParams.paramsQ, result);
+
+                        //(byte) (((((polyA[8 * i + j]) << 4) + (KyberParams.paramsQ / 2)) / (KyberParams.paramsQ)) & 15)
+                        t[j] = (byte)(result[1] & 15);
                     }
-                    r[rr + 0] = (byte) (t[0] | (t[1] << 4));
-                    r[rr + 1] = (byte) (t[2] | (t[3] << 4));
-                    r[rr + 2] = (byte) (t[4] | (t[5] << 4));
-                    r[rr + 3] = (byte) (t[6] | (t[7] << 4));
-                    rr = rr + 4;
+                    r[(short)(rr + 0)] = (byte)(t[0] | (t[1] << 4));
+                    r[(short)(rr + 1)] = (byte)(t[2] | (t[3] << 4));
+                    r[(short)(rr + 2)] = (byte)(t[4] | (t[5] << 4));
+                    r[(short)(rr + 3)] = (byte)(t[6] | (t[7] << 4));
+                    rr+=4;
                 }
                 break;
 //            default:
@@ -174,22 +196,28 @@ public final class Poly
         return r;
     }
 
-    public short[] polyFromBytes(byte[] a) {
+    public short[] polyFromBytes(byte[] a)
+    {
         short[] r = new short[KyberParams.paramsPolyBytes];
-        for (int i = 0; i < KyberParams.paramsN / 2; i++) {
-            r[2 * i] = (short) ((((a[3 * i + 0] & 0xFF) >> 0) | ((a[3 * i + 1] & 0xFF) << 8)) & 0xFFF);
-            r[2 * i + 1] = (short) ((((a[3 * i + 1] & 0xFF) >> 4) | ((a[3 * i + 2] & 0xFF) << 4)) & 0xFFF);
+        for (short i = 0; i < KyberParams.paramsN / 2; i++)
+        {
+            r[(short)(2 * i)] = (short)((((a[(short)(3 * i + 0)] & 0xFF) >> 0) | ((a[(short)(3 * i + 1)] & 0xFF) << 8)) & 0xFFF);
+            r[(short)(2 * i + 1)] = (short)((((a[(short)(3 * i + 1)] & 0xFF) >> 4) | ((a[(short)(3 * i + 2)] & 0xFF) << 4)) & 0xFFF);
         }
         return r;
     }
 
-    public short[] polyFromData(byte[] msg) {
+    //smart card ok, need opt
+    public short[] polyFromData(byte[] msg)
+    {
         short[] r = new short[KyberParams.paramsN];
         short mask;
-        for (int i = 0; i < KyberParams.paramsN / 8; i++) {
-            for (int j = 0; j < 8; j++) {
-                mask = (short) (-1 * (short) (((msg[i] & 0xFF) >> j) & 1));
-                r[8 * i + j] = (short) (mask & (short) ((KyberParams.paramsQ + 1) / 2));
+        for (byte i = 0; i < KyberParams.paramsN / 8; i++)
+        {
+            for (byte j = 0; j < 8; j++)
+            {
+                mask = (short)(-1 * (short)(((msg[i] & 0xFF) >> j) & 1));
+                r[(short)(8 * i + j)] = (short) (mask & (short) ((KyberParams.paramsQ + 1) / 2));
             }
         }
         return r;
@@ -246,16 +274,15 @@ public final class Poly
     //smart card ok, need optimization
     public short[] generateCBDPoly(byte[] buf, byte paramsK)
     {
-        byte[] d = new byte[3];
-        byte[] t = new byte[3];
-        byte[] tempT = new byte[3];
+        byte[] d = new byte[4];
+        byte[] t = new byte[4];
+        byte[] tempT = new byte[4];
 
         short a, b;
         short[] r = new short[KyberParams.paramsPolyBytes];
         switch (paramsK)
         {
-            //Only kyber 512 for now
-            case 2: default:
+            case 2:
                 for (byte i = 0; i < KyberParams.paramsN / 4; i++)
                 {
                     //t = Poly.convertByteTo24BitUnsignedInt(Arrays.copyOfRange(buf, (3 * i), buf.length));
@@ -298,32 +325,84 @@ public final class Poly
                     //See generateCBDPoly.txt
                     a = (short)(((d[2]&0xFF)>>0) & 0x7);                          //a = (short)((d >> (6 * j + 0)) & 0x7);
                     b = (short)((((d[1]&0xFF)<<5) | ((d[2]&0xFF)>>3)) & 0x7);//3  //b = (short)((d >> (6 * j + KyberParams.paramsETAK512)) & 0x7);
-                    r[(short)(4 * i + 0)] = (short)(a - b);                                //r[4 * i + j] = (short)(a - b);
+                    r[(short)(4 * i + 0)] = (short)(a - b);                       //r[4 * i + j] = (short)(a - b);
 
                     a = (short)((((d[1]&0xFF)<<2) | ((d[2]&0xFF)>>6)) & 0x7);//6  //a = (short)((d >> (6 * j + 0)) & 0x7);
                     b = (short)((((d[0]&0xFF)<<7) | ((d[1]&0xFF)>>1)) & 0x7);//9  //b = (short)((d >> (6 * j + KyberParams.paramsETAK512)) & 0x7);
-                    r[(short)(4 * i + 1)] = (short)(a - b);                                //r[4 * i + j] = (short)(a - b);
+                    r[(short)(4 * i + 1)] = (short)(a - b);                       //r[4 * i + j] = (short)(a - b);
 
                     a = (short)((((d[0]&0xFF)<<4) | ((d[1]&0xFF)>>4)) & 0x7);//12 //a = (short)((d >> (6 * j + 0)) & 0x7);
                     b = (short)((((d[0]&0xFF)<<1) | ((d[1]&0xFF)>>7)) & 0x7);//15 //b = (short)((d >> (6 * j + KyberParams.paramsETAK512)) & 0x7);
-                    r[(short)(4 * i + 2)] = (short)(a - b);                                //r[4 * i + j] = (short)(a - b);
+                    r[(short)(4 * i + 2)] = (short)(a - b);                       //r[4 * i + j] = (short)(a - b);
 
                     a = (short)(((d[0]&0xFF)>>2) & 0x7);//18                      //a = (short)((d >> (6 * j + 0)) & 0x7);
                     b = (short)(((d[0]&0xFF)>>5) & 0x7);//21                      //b = (short)((d >> (6 * j + KyberParams.paramsETAK512)) & 0x7);
-                    r[(short)(4 * i + 3)] = (short)(a - b);                         //r[4 * i + j] = (short)(a - b);
+                    r[(short)(4 * i + 3)] = (short)(a - b);                       //r[4 * i + j] = (short)(a - b);
                 }
                 break;
-//            default:
-//                for (int i = 0; i < KyberParams.paramsN / 8; i++) {
-//                    t = Poly.convertByteTo32BitUnsignedInt(Arrays.copyOfRange(buf, (4 * i), buf.length));
-//                    d = t & 0x55555555;
-//                    d = d + ((t >> 1) & 0x55555555);
-//                    for (int j = 0; j < 8; j++) {
-//                        a = (short) ((d >> (4 * j + 0)) & 0x3);
-//                        b = (short) ((d >> (4 * j + KyberParams.paramsETAK768K1024)) & 0x3);
-//                        r[8 * i + j] = (short) (a - b);
-//                    }
-//                }
+            default:
+                for (byte i = 0; i < KyberParams.paramsN / 8; i++)
+                {
+                    //t = this.convertByteTo32BitUnsignedInt(Arrays.copyOfRange(buf, (4 * i), buf.length));
+                    t[0] = buf[(short)(4*i+3)];
+                    t[1] = buf[(short)(4*i+2)];
+                    t[2] = buf[(short)(4*i+1)];
+                    t[3] = buf[(short)(4*i+0)];
+
+                    //t & 0x55555555
+                    d[0] = (byte)(t[0] & 0x55);
+                    d[1] = (byte)(t[1] & 0x55);
+                    d[2] = (byte)(t[2] & 0x55);
+                    d[3] = (byte)(t[3] & 0x55);
+
+                    //t >> 1
+                    t[3] = (byte)(((t[3]&0xFF)>>1) | ((t[2]&0xFF)<<7));
+                    t[2] = (byte)(((t[2]&0xFF)>>1) | ((t[1]&0xFF)<<7));
+                    t[1] = (byte)(((t[1]&0xFF)>>1) | ((t[0]&0xFF)<<7));
+                    t[0] = (byte)(((t[0]&0xFF)>>1));
+
+                    //(t >> 1) & 0x55555555
+                    tempT[0] = (byte)(t[0] & 0x55);
+                    tempT[1] = (byte)(t[1] & 0x55);
+                    tempT[2] = (byte)(t[2] & 0x55);
+                    tempT[3] = (byte)(t[3] & 0x55);
+
+                    //d = d + (t >> 1) & 0x55555555
+                    Arithmetic.sumByteArrays(d,tempT);
+
+                    //for (int j = 0; j < 8; j++) //replaced loop with static 8 assignments
+                    a = (short)(((d[3]&0xFF)>>0) & 0x3);
+                    b = (short)((((d[2]&0xFF)<<6) | ((d[3]&0xFF)>>2)) & 0x3); //2
+                    r[(short)(8 * i + 0)] = (short)(a - b);
+
+                    a = (short)((((d[2]&0xFF)<<4) | ((d[3]&0xFF)>>4)) & 0x3); //4
+                    b = (short)((((d[2]&0xFF)<<2) | ((d[3]&0xFF)>>6)) & 0x3); //6
+                    r[(short)(8 * i + 1)] = (short)(a - b);
+
+                    a = (short)((((d[2]&0xFF)<<0) | ((d[3]&0xFF)>>8)) & 0x3); //8
+                    b = (short)((((d[1]&0xFF)<<6) | ((d[2]&0xFF)>>2)) & 0x3); //10
+                    r[(short)(8 * i + 2)] = (short)(a - b);
+
+                    a = (short)((((d[1]&0xFF)<<4) | ((d[2]&0xFF)>>4)) & 0x3); //12
+                    b = (short)((((d[1]&0xFF)<<2) | ((d[2]&0xFF)>>6)) & 0x3); //14
+                    r[(short)(8 * i + 3)] = (short)(a - b);
+
+                    a = (short)((((d[1]&0xFF)<<0) | ((d[2]&0xFF)>>8)) & 0x3); //16
+                    b = (short)((((d[0]&0xFF)<<6) | ((d[1]&0xFF)>>2)) & 0x3); //18
+                    r[(short)(8 * i + 4)] = (short)(a - b);
+
+                    a = (short)((((d[0]&0xFF)<<4) | ((d[1]&0xFF)>>4)) & 0x3); //20
+                    b = (short)((((d[0]&0xFF)<<2) | ((d[1]&0xFF)>>6)) & 0x3); //22
+                    r[(short)(8 * i + 5)] = (short)(a - b);
+
+                    a = (short)((((d[0]&0xFF)<<0) | ((d[1]&0xFF)>>8)) & 0x3); //24
+                    b = (short)(((d[0]&0xFF)>>2) & 0x3); //26
+                    r[(short)(8 * i + 6)] = (short)(a - b);
+
+                    a = (short)(((d[0]&0xFF)>>4) & 0x3); //28
+                    b = (short)(((d[0]&0xFF)>>6) & 0x3); //30
+                    r[(short)(8 * i + 7)] = (short)(a - b);
+                }
         }
         return r;
     }
@@ -387,27 +466,34 @@ public final class Poly
         return jc[0];
     }
 
+    //smart card ok
     public short[] polyInvNTTMont(short[] r)
     {
         return this.invNTT(r);
     }
 
-    public short[] invNTT(short[] r) {
-        int j = 0;
-        int k = 0;
-        for (int l = 2; l <= 128; l <<= 1) {
-            for (int start = 0; start < 256; start = j + l) {
-                short zeta = Poly.nttZetasInv[k];
-                k = k + 1;
-                for (j = start; j < start + l; j++) {
+    //smart card ok
+    public short[] invNTT(short[] r)
+    {
+        short j = 0;
+        short k = 0;
+        for (short l = 2; l <= 128; l <<= 1)
+        {
+            for (short start = 0; start < 256; start = (short)(j + l))
+            {
+                short zeta = nttZetasInv[k];
+                k+=1;
+                for (j = start; j < (short)(start + l); j++)
+                {
                     short t = r[j];
-                    r[j] = this.barrettReduce((short) (t + r[j + l]));
-                    r[j + l] = (short) (t - r[j + l]);
-                    r[j + l] = this.modQMulMont(zeta, r[j + l]);
+                    r[j] = this.barrettReduce((short)(t + r[(short)(j + l)]));
+                    r[(short)(j + l)] = (short)(t - r[(short)(j + l)]);
+                    r[(short)(j + l)] = this.modQMulMont(zeta, r[(short)(j + l)]);
                 }
             }
         }
-        for (j = 0; j < 256; j++) {
+        for (j = 0; j < 256; j++)
+        {
             r[j] = this.modQMulMont(r[j], nttZetasInv[127]);
         }
         return r;
@@ -486,16 +572,21 @@ public final class Poly
         return (short)(a - t);
     }
 
-    public short[] polyConditionalSubQ(short[] r) {
-        for (int i = 0; i < KyberParams.paramsN; i++) {
+    //smart card ok
+    public short[] polyConditionalSubQ(short[] r)
+    {
+        for (short i = 0; i < KyberParams.paramsN; i++)
+        {
             r[i] = this.conditionalSubQ(r[i]);
         }
         return r;
     }
 
-    public short conditionalSubQ(short a) {
-        a = (short) (a - KyberParams.paramsQ);
-        a = (short) (a + ((int) ((int) a >> 15) & KyberParams.paramsQ));
+    //smart card ok, potential issue when a > short max ?
+    public short conditionalSubQ(short a)
+    {
+        a = (short)(a - KyberParams.paramsQ);
+        a = (short)(a + ((a >> 15) & KyberParams.paramsQ));
         return a;
     }
 
@@ -522,39 +613,60 @@ public final class Poly
         return new short[(short)(paramsK*KyberParams.paramsPolyBytes)];
     }
 
-    public byte[] compressPolyVector(short[][] a, byte paramsK) {
+    //smart card ok
+    public byte[] compressPolyVector(short[] a, byte paramsK)
+    {
         this.polyVectorCSubQ(a, paramsK);
-        int rr = 0;
+        short rr = 0;
         byte[] r;
-        long[] t;
-        switch (paramsK) {
-            //Only kyber 512 for now
-            case 2: default:
+        short[] t;
+        switch (paramsK)
+        {
+            case 2:
                 r = new byte[KyberParams.paramsPolyvecCompressedBytesK512];
                 break;
-//            case 3:
-//                r = new byte[KyberParams.paramsPolyvecCompressedBytesK768];
-//                break;
-//            default:
-//                r = new byte[KyberParams.paramsPolyvecCompressedBytesK1024];
+            case 3:
+                r = new byte[KyberParams.paramsPolyvecCompressedBytesK768];
+                break;
+            default:
+                r = new byte[KyberParams.paramsPolyvecCompressedBytesK1024];
         }
 
-        switch (paramsK) {
+        switch (paramsK)
+        {
             //Only kyber 512 for now
             case 2:
             case 3: default:
-                t = new long[4];
-                for (byte i = 0; i < paramsK; i++) {
-                    for (int j = 0; j < KyberParams.paramsN / 4; j++) {
-                        for (int k = 0; k < 4; k++) {
-                            t[k] = ((long) (((long) ((long) (a[i][4 * j + k]) << 10) + (long) (KyberParams.paramsQ / 2)) / (long) (KyberParams.paramsQ)) & 0x3ff);
+                t = new short[4];//Kyber 512 only for now, perhaps need to be increased for Kyber 768 and Kyber 1024
+                for (byte i = 0; i < paramsK; i++)
+                {
+                    for (short j = 0; j < KyberParams.paramsN / 4; j++)
+                    {
+                        for (byte k = 0; k < 4; k++)
+                        {
+                            //t[k] = ((long) (((long) ((long) (a[i][4 * j + k]) << 10) + (long) (KyberParams.paramsQ / 2)) / (long) (KyberParams.paramsQ)) & 0x3ff);
+
+                            this.arrayCopyNonAtomic(a,(short)(i*384),RAM384,(short)0,(short)384);
+
+                            //((long) (a[i][4 * j + k]) << 10)
+                            short shHigh = (short)((RAM384[(short)(4 * j + k)]) >> 6);
+                            short shLow = (short)((RAM384[(short)(4 * j + k)]) << 10);
+
+                            //((long) ((long) (a[i][4 * j + k]) << 10) + (long) (KyberParams.paramsQ / 2))
+                            Arithmetic.add(shHigh, shLow, (short)0, (short)(KyberParams.paramsQ / 2), result);
+
+                            //(((long) ((long) (a[i][4 * j + k]) << 10) + (long) (KyberParams.paramsQ / 2)) / (long) (KyberParams.paramsQ))
+                            Arithmetic.divide(result[0], result[1], (short)0, KyberParams.paramsQ, result);
+
+                            //((long) (((long) ((long) (a[i][4 * j + k]) << 10) + (long) (KyberParams.paramsQ / 2)) / (long) (KyberParams.paramsQ)) & 0x3ff)
+                            t[k] = (short)(result[1]&0x3FF);
                         }
-                        r[rr + 0] = (byte) (t[0] >> 0);
-                        r[rr + 1] = (byte) ((t[0] >> 8) | (t[1] << 2));
-                        r[rr + 2] = (byte) ((t[1] >> 6) | (t[2] << 4));
-                        r[rr + 3] = (byte) ((t[2] >> 4) | (t[3] << 6));
-                        r[rr + 4] = (byte) ((t[3] >> 2));
-                        rr = rr + 5;
+                        r[(short)(rr + 0)] = (byte)(t[0] >> 0);
+                        r[(short)(rr + 1)] = (byte)((t[0] >> 8) | (t[1] << 2));
+                        r[(short)(rr + 2)] = (byte)((t[1] >> 6) | (t[2] << 4));
+                        r[(short)(rr + 3)] = (byte)((t[2] >> 4) | (t[3] << 6));
+                        r[(short)(rr + 4)] = (byte)((t[3] >> 2));
+                        rr+=5;
                     }
                 }
                 break;
@@ -641,12 +753,17 @@ public final class Poly
         return r;
     }
 
-    public short[][] polyVectorFromBytes(byte[] polyA, byte paramsK) {
-        short[][] r = new short[paramsK][KyberParams.paramsPolyBytes];
-        for (byte i = 0; i < paramsK; i++) {
-            int start = (i * KyberParams.paramsPolyBytes);
-            int end = (i + 1) * KyberParams.paramsPolyBytes;
-            r[i] = this.polyFromBytes(Arrays.copyOfRange(polyA, start, end));
+    //smart card ok, needs opt
+    public short[] polyVectorFromBytes(byte[] polyA, byte paramsK)
+    {
+        short[] r = new short[(short)(paramsK*KyberParams.paramsPolyBytes)];
+        for (byte i = 0; i < paramsK; i++)
+        {
+            short start = (short)(i * KyberParams.paramsPolyBytes);
+            short end = (short)((i + 1) * KyberParams.paramsPolyBytes);
+            byte[] temp = new byte[(short)(end-start)];
+            Util.arrayCopyNonAtomic(polyA, start, temp, (short)0, (short)(end-start));
+            this.arrayCopyNonAtomic(this.polyFromBytes(temp), (short)0, r, (short)(i*384), (short)384);
         }
         return r;
     }
@@ -659,17 +776,23 @@ public final class Poly
         {
             //i=0, row = 384, 0*384 = 0   -> 384
             //i=1, row = 384, 1*384 = 384 -> 768
-            short[] row = new short[(short)384];
-            this.arrayCopyNonAtomic(r, (short)(i * (short)384), row, (short)0, (short)384);
-            row = this.polyNTT(row);
-            this.arrayCopyNonAtomic(row, (short)0, r, (short)(i * (short)384), (short)384);
+            this.arrayCopyNonAtomic(r, (short)(i * (short)384), RAM384, (short)0, (short)384);
+            RAM384 = this.polyNTT(RAM384);
+            this.arrayCopyNonAtomic(RAM384, (short)0, r, (short)(i * (short)384), (short)384);
         }
         return r;
     }
 
-    public short[][] polyVectorInvNTTMont(short[][] r, byte paramsK) {
-        for (byte i = 0; i < paramsK; i++) {
-            r[i] = this.polyInvNTTMont(r[i]);
+    //smart card ok, need opt
+    public short[] polyVectorInvNTTMont(short[] r, byte paramsK)
+    {
+        for (byte i = 0; i < paramsK; i++)
+        {
+            //i=0, row = 384, 0*384 = 0   -> 384
+            //i=1, row = 384, 1*384 = 384 -> 768
+            this.arrayCopyNonAtomic(r, (short)(i * (short)384), RAM384, (short)0, (short)384);
+            RAM384 = this.polyInvNTTMont(RAM384);
+            this.arrayCopyNonAtomic(RAM384, (short)0, r, (short)(i * (short)384), (short)384);
         }
         return r;
     }
@@ -684,9 +807,9 @@ public final class Poly
         this.arrayCopyNonAtomic(polyA, (short)0, polyArow, (short)0, rowSize);
         //variable r can be removed since polyBaseMulMont returns polyArow
         short[] r = this.polyBaseMulMont(polyArow, Brow);
+        short[] Arow = new short[rowSize];
         for (byte i = 1; i < paramsK; i++)
         {
-            short[] Arow = new short[rowSize];
             this.arrayCopyNonAtomic(polyA, (short)(i*rowSize), Arow, (short)0, rowSize);
             this.arrayCopyNonAtomic(polyB, (short)(i*rowSize), Brow, (short)0, rowSize);
             short[] t = this.polyBaseMulMont(Arow, Brow);
@@ -703,17 +826,20 @@ public final class Poly
         {
             //i=0, row = 384, 0*384 = 0   -> 384
             //i=1, row = 384, 1*384 = 384 -> 768
-            short[] row = new short[(short)384];
-            this.arrayCopyNonAtomic(r, (short)(i * (short)384), row, (short)0, (short)384);
-            row = this.polyReduce(row);
-            this.arrayCopyNonAtomic(row, (short)0, r, (short)(i * (short)384), (short)384);
+            this.arrayCopyNonAtomic(r, (short)(i * (short)384), RAM384, (short)0, (short)384);
+            RAM384 = this.polyReduce(RAM384);
+            this.arrayCopyNonAtomic(RAM384, (short)0, r, (short)(i * (short)384), (short)384);
         }
         return r;
     }
 
-    public short[][] polyVectorCSubQ(short[][] r, byte paramsK) {
-        for (byte i = 0; i < paramsK; i++) {
-            r[i] = this.polyConditionalSubQ(r[i]);
+    //smart card ok, need opt
+    public short[] polyVectorCSubQ(short[] r, byte paramsK)
+    {
+        for (byte i = 0; i < paramsK; i++)
+        {
+            this.arrayCopyNonAtomic(r,(short)(i*384),RAM384,(short)0,(short)384);
+            this.arrayCopyNonAtomic(this.polyConditionalSubQ(RAM384),(short)0,r,(short)(i*384),(short)384);
         }
         return r;
     }
