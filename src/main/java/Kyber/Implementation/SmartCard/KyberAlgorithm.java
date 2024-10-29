@@ -4,6 +4,7 @@ import Kyber.Implementation.SmartCard.dummy.JCSystem;
 import Kyber.Implementation.SmartCard.dummy.Util;
 import Kyber.Implementation.SmartCard.dummy.RandomData;
 import Kyber.Models.*;
+import Kyber.service.KyberReferenceService;
 
 public class KyberAlgorithm
 {
@@ -39,8 +40,9 @@ public class KyberAlgorithm
     private short[] uniformR;
     private short uniformI = 0;
 
-    public byte[] cipheredText;
+    public byte[] encapsulation;
     public byte[] secretKey;
+    public byte[] plain;
 
     private short[] publicKeyPolyvec;
     private byte[] seed;
@@ -78,49 +80,53 @@ public class KyberAlgorithm
         this.keccak = Keccak.getInstance(Keccak.ALG_SHAKE_256);
         this.keccak.setShakeDigestLength((short)32);
         this.keccak.doFinal(newKr, sharedSecret);
-        this.cipheredText = ciphertext;//dont do this, use it as reference
+        this.encapsulation = ciphertext;//dont do this, use it as reference
         this.secretKey = sharedSecret;//dont do this, use it as reference
     }
 
     //phase 3
-//    public KyberDecrypted decapsulate(byte[] encapsulation, byte[] privateKey, byte paramsK, short secretKeyBytes, short publicKeyBytes, short privateKeyBytes) throws Exception
-//    {
-//        Keccak keccak;
-//        byte[] sharedSecretFixedLength = new byte[KyberParams.KyberSSBytes];
-//        byte[] indcpaPrivateKey = new byte[secretKeyBytes];
-//        System.arraycopy(privateKey, 0, indcpaPrivateKey, 0, indcpaPrivateKey.length);
-//        byte[] publicKey = new byte[publicKeyBytes];
-//        System.arraycopy(privateKey, secretKeyBytes, publicKey, 0, publicKey.length);
-//        //buf renamed to plain
+    public void decapsulate(short secretKeyBytes, short publicKeyBytes, short privateKeyBytes) throws Exception
+    {
+        Keccak keccak;
+        byte[] sharedSecretFixedLength = new byte[KyberParams.KyberSSBytes];
+        byte[] indcpaPrivateKey = new byte[secretKeyBytes];
+        System.arraycopy(this.keyPair.privateKey, 0, indcpaPrivateKey, 0, indcpaPrivateKey.length);
+        byte[] publicKey = new byte[publicKeyBytes];
+        System.arraycopy(this.keyPair.privateKey, secretKeyBytes, publicKey, 0, publicKey.length);
+        //buf renamed to plain
 //        byte[] plain = this.decrypt(encapsulation, indcpaPrivateKey, paramsK);
-//        int ski = privateKeyBytes - 2 * KyberParams.paramsSymBytes;
-//        byte[] newBuf = new byte[plain.length + KyberParams.paramsSymBytes];
-//        System.arraycopy(plain, 0, newBuf, 0, plain.length);
-//        System.arraycopy(privateKey, ski, newBuf, plain.length, KyberParams.paramsSymBytes);
-//        keccak = Keccak.getInstance(Keccak.ALG_SHA3_512);
-//        byte[] kr = new byte[64];
-//        keccak.doFinal(newBuf, kr);
-//        byte[] subKr = new byte[kr.length - KyberParams.paramsSymBytes];
-//        System.arraycopy(kr, KyberParams.paramsSymBytes, subKr, 0, subKr.length);
-//        byte[] cmp = this.encrypt(plain, publicKey, subKr, paramsK);
-//        byte fail = (byte) this.constantTimeCompare(encapsulation, cmp);
-//        keccak = Keccak.getInstance(Keccak.ALG_SHA3_256);
-//        byte[] krh = new byte[32];
-//        keccak.doFinal(encapsulation, krh);
-//        int index = privateKeyBytes - KyberParams.paramsSymBytes;
-//        for (int i = 0; i < KyberParams.paramsSymBytes; i++)
-//        {
-//            kr[i] = (byte) ((int) (kr[i] & 0xFF) ^ ((int) (fail & 0xFF) & ((int) (kr[i] & 0xFF) ^ (int) (privateKey[index] & 0xFF))));
-//            index += 1;
-//        }
-//        byte[] tempBuf = new byte[KyberParams.paramsSymBytes + krh.length];
-//        System.arraycopy(kr, 0, tempBuf, 0, KyberParams.paramsSymBytes);
-//        System.arraycopy(krh, 0, tempBuf, KyberParams.paramsSymBytes, krh.length);
-//        keccak = Keccak.getInstance(Keccak.ALG_SHAKE_256);
-//        keccak.setShakeDigestLength((short)32);
-//        keccak.doFinal(tempBuf, sharedSecretFixedLength);
+        byte[] plain = Kyber.Implementation.Reference.KyberAlgorithm.decrypt(encapsulation, indcpaPrivateKey, paramsK);
+        int ski = privateKeyBytes - 2 * KyberParams.paramsSymBytes;
+        byte[] newBuf = new byte[plain.length + KyberParams.paramsSymBytes];
+        System.arraycopy(plain, 0, newBuf, 0, plain.length);
+        System.arraycopy(this.keyPair.privateKey, ski, newBuf, plain.length, KyberParams.paramsSymBytes);
+        keccak = Keccak.getInstance(Keccak.ALG_SHA3_512);
+        byte[] kr = new byte[64];
+        keccak.doFinal(newBuf, kr);
+        byte[] subKr = new byte[kr.length - KyberParams.paramsSymBytes];
+        System.arraycopy(kr, KyberParams.paramsSymBytes, subKr, 0, subKr.length);
+        byte[] cmp = this.encrypt(plain, publicKey, subKr);
+        byte fail = (byte) Kyber.Implementation.Reference.KyberAlgorithm.constantTimeCompare(encapsulation, cmp);
+        keccak = Keccak.getInstance(Keccak.ALG_SHA3_256);
+        byte[] krh = new byte[32];
+        keccak.doFinal(encapsulation, krh);
+        int index = privateKeyBytes - KyberParams.paramsSymBytes;
+        for (int i = 0; i < KyberParams.paramsSymBytes; i++)
+        {
+            kr[i] = (byte) ((int) (kr[i] & 0xFF) ^ ((int) (fail & 0xFF) & ((int) (kr[i] & 0xFF) ^ (int) (this.keyPair.privateKey[index] & 0xFF))));
+            index += 1;
+        }
+        byte[] tempBuf = new byte[KyberParams.paramsSymBytes + krh.length];
+        System.arraycopy(kr, 0, tempBuf, 0, KyberParams.paramsSymBytes);
+        System.arraycopy(krh, 0, tempBuf, KyberParams.paramsSymBytes, krh.length);
+        keccak = Keccak.getInstance(Keccak.ALG_SHAKE_256);
+        keccak.setShakeDigestLength((short)32);
+        keccak.doFinal(tempBuf, sharedSecretFixedLength);
+        this.plain = plain;
+        this.secretKey = sharedSecretFixedLength;
+
 //        return new KyberDecrypted(plain, sharedSecretFixedLength);
-//    }
+    }
 
     //phase 3
 //    public byte[] decrypt(byte[] packedCipherText, byte[] privateKey, byte paramsK)

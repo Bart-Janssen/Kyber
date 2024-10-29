@@ -4,9 +4,10 @@ import Kyber.Implementation.SmartCard.dummy.Util;
 import Kyber.Models.KeyPair;
 import Kyber.Models.KyberEncrypted;
 import Kyber.Models.KyberParams;
+import Kyber.service.KyberService;
 
 //Fake applet
-public class Applet
+public class Applet extends KyberService
 {
     private static Applet applet;
     private byte[] sharedSecred = new byte[32];
@@ -18,14 +19,6 @@ public class Applet
     {
         if (applet == null) applet = new Applet();
         return applet;
-    }
-
-    //Fake apdu call to generate 512 keys
-    public void generateKyber512Key() throws Exception
-    {
-        byte paramsK = (byte)2;
-        KyberAlgorithm.getInstance(paramsK).generateKeys(KyberParams.Kyber512SKBytes);
-        this.keyPair = KeyPair.getInstance(paramsK);
     }
 
     //Fake apdu call to get public key
@@ -40,15 +33,45 @@ public class Applet
         return this.keyPair.privateKey;
     }
 
-    public KyberEncrypted encapsulate(byte paramsK) throws Exception
+    @Override
+    public KeyPair generateKeys(int mode) throws Exception
     {
-        KyberAlgorithm.getInstance(paramsK).encapsulate();
-        return new KyberEncrypted(KyberAlgorithm.getInstance(paramsK).cipheredText, KyberAlgorithm.getInstance(paramsK).secretKey);
+        if (mode == 512)
+        {
+            byte paramsK = (byte)2;
+            KyberAlgorithm.getInstance(paramsK).generateKeys(KyberParams.Kyber512SKBytes);
+            this.keyPair = KeyPair.getInstance(paramsK);
+            return this.keyPair;//ignored
+        }
+        throw new RuntimeException("Mode not supported");
     }
 
-    public void setPublicKey(byte[] publicKey, byte paramsK)
+    @Override
+    public KyberEncrypted encapsulate(int mode, byte[] publicKey) throws Exception
     {
-        this.keyPair = KeyPair.getInstance(paramsK);
-        this.keyPair.publicKey = publicKey;//through APDU
+        if (mode == 512)
+        {
+            byte paramsK = (byte)2;
+            this.keyPair = KeyPair.getInstance(paramsK);
+            this.keyPair.publicKey = publicKey;//through APDU
+            KyberAlgorithm.getInstance(paramsK).encapsulate();
+            return new KyberEncrypted(KyberAlgorithm.getInstance(paramsK).encapsulation, KyberAlgorithm.getInstance(paramsK).secretKey);
+        }
+        throw new RuntimeException("Mode not supported");
+    }
+
+    @Override
+    public byte[] decapsulate(int mode, byte[] privateKey, byte[] encapsulation) throws Exception
+    {
+        if (mode == 512)
+        {
+            byte paramsK = (byte)2;
+            this.keyPair = KeyPair.getInstance(paramsK);
+            this.keyPair.privateKey = privateKey;//through APDU
+            KyberAlgorithm.getInstance(paramsK).encapsulation = encapsulation;
+            KyberAlgorithm.getInstance(paramsK).decapsulate(KyberParams.paramsIndcpaSecretKeyBytesK512, KyberParams.paramsIndcpaPublicKeyBytesK512, KyberParams.Kyber512SKBytes);
+            return KyberAlgorithm.getInstance(paramsK).secretKey;
+        }
+        throw new RuntimeException("Mode not supported");
     }
 }
