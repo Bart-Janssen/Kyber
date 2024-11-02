@@ -1,8 +1,11 @@
 package Kyber;
 
 import Kyber.Models.KyberEncrypted;
-import Kyber.service.KyberReferenceService;
 import Kyber.smartcard.KyberSmartCard;
+import javax.smartcardio.Card;
+import javax.smartcardio.CardTerminal;
+import javax.smartcardio.TerminalFactory;
+import java.util.List;
 
 public class SmartCardClient extends Client
 {
@@ -19,9 +22,9 @@ public class SmartCardClient extends Client
     {
         try
         {
-//            List<CardTerminal> readers = TerminalFactory.getDefault().terminals().list();
-//            Card card = readers.get(0).connect("T=1");
-            this.smartCard = new KyberSmartCard(super.mode, null, showSmartCardLogging);
+            List<CardTerminal> readers = TerminalFactory.getDefault().terminals().list();
+            Card card = readers.get(0).connect("T=1");
+            this.smartCard = new KyberSmartCard(super.mode, card, showSmartCardLogging);
             this.smartCard.selectKyberApplet();
         }
         catch (Exception e)

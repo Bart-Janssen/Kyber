@@ -1,40 +1,21 @@
 package Kyber;
 
-import Kyber.smartcard.KyberSmartCard;
-import javax.smartcardio.Card;
-import javax.smartcardio.CardTerminal;
-import javax.smartcardio.TerminalFactory;
-import java.util.List;
+import Kyber.smartcard.KyberDummySmartCard;
 
-public class SmartCardServer extends Server
+public class SmartCardDummyServer extends Server
 {
-    private KyberSmartCard smartCard;
+    private KyberDummySmartCard smartCard;
 
-    protected SmartCardServer(int mode, boolean showSmartCardLogging) throws Exception
+    protected SmartCardDummyServer(int mode) throws Exception
     {
         super(mode);
-        this.connectSmartCard(showSmartCardLogging);
+        this.smartCard = new KyberDummySmartCard(super.mode, null, false);
 
         if (super.mode != 512) throw new RuntimeException("Only 512 supported right now");
         this.smartCard.generateKyber512Key();
         System.out.print("[Smart card server] : Public key:  " + this.smartCard.getPublicKey().length + " | "); print(this.smartCard.getPublicKey());
         System.out.print("[Smart card server] : Private key: " + this.smartCard.getPrivateKey().length + " | "); print(this.smartCard.getPrivateKey());
         super.publicKey = this.smartCard.getPublicKey();
-    }
-
-    private void connectSmartCard(boolean showSmartCardLogging)
-    {
-        try
-        {
-            List<CardTerminal> readers = TerminalFactory.getDefault().terminals().list();
-            Card card = readers.get(0).connect("T=1");
-            this.smartCard = new KyberSmartCard(super.mode, card, showSmartCardLogging);
-            this.smartCard.selectKyberApplet();
-        }
-        catch (Exception e)
-        {
-            System.out.println("Not able to receive private key, cannot connect to smart card.");
-        }
     }
 
     @Override

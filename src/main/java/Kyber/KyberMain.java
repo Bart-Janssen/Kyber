@@ -9,12 +9,12 @@ public class KyberMain
             for (int i = 0; i < 1; i++)
             {
                 System.out.println(i);
-//                            Server server = new KeyServer(512, true, true);
+//                Server server = new KeyServer(512, true, true);
 //                Server server = new JCEServer(512);
-                Server server = new SmartCardServer(512, true);
+                Server server = new SmartCardDummyServer(512);
 
 
-//                Client client = new SmartCardClient(512, true);
+//                Client client = new SmartCardDummyClient(512);
                 Client client = new JCEClient(512);
                 client.setServerPublic(server.getPublic());
 
@@ -22,8 +22,6 @@ public class KyberMain
 
                 //Send encapsulation over insecure network to server
                 System.out.print("[Network] : Encapsulated secret: " + encapsulation.length + " | ");print(encapsulation);
-
-//            new BufferedReader(new InputStreamReader(System.in)).readLine();
 
                 server.decapsulate(encapsulation);
 
