@@ -4,7 +4,6 @@ import Kyber.Implementation.SmartCard.dummy.JCSystem;
 import Kyber.Implementation.SmartCard.dummy.Util;
 import Kyber.Implementation.SmartCard.dummy.RandomData;
 import Kyber.Models.*;
-import Kyber.service.KyberReferenceService;
 
 public class KyberAlgorithm
 {
@@ -33,7 +32,7 @@ public class KyberAlgorithm
         return kyber;
     }
 
-    private final byte paramsK;
+    private byte paramsK;
     private Keccak keccak;
     private final KeyPair keyPair;
 
@@ -46,6 +45,9 @@ public class KyberAlgorithm
 
     private short[] publicKeyPolyvec;
     private byte[] seed;
+
+    short[] bp;
+    short[] v;
     
     //phase 2
     public void encapsulate() throws Exception
@@ -87,61 +89,57 @@ public class KyberAlgorithm
     //phase 3
     public void decapsulate(short secretKeyBytes, short publicKeyBytes, short privateKeyBytes) throws Exception
     {
-        Keccak keccak;
         byte[] sharedSecretFixedLength = new byte[KyberParams.KyberSSBytes];
         byte[] indcpaPrivateKey = new byte[secretKeyBytes];
-        System.arraycopy(this.keyPair.privateKey, 0, indcpaPrivateKey, 0, indcpaPrivateKey.length);
+        Util.arrayCopyNonAtomic(this.keyPair.privateKey, (short)0, indcpaPrivateKey, (short)0, (short)indcpaPrivateKey.length);
         byte[] publicKey = new byte[publicKeyBytes];
-        System.arraycopy(this.keyPair.privateKey, secretKeyBytes, publicKey, 0, publicKey.length);
+        Util.arrayCopyNonAtomic(this.keyPair.privateKey, secretKeyBytes, publicKey, (short)0, (short)publicKey.length);
         //buf renamed to plain
-//        byte[] plain = this.decrypt(encapsulation, indcpaPrivateKey, paramsK);
-        byte[] plain = Kyber.Implementation.Reference.KyberAlgorithm.decrypt(encapsulation, indcpaPrivateKey, paramsK);
-        int ski = privateKeyBytes - 2 * KyberParams.paramsSymBytes;
-        byte[] newBuf = new byte[plain.length + KyberParams.paramsSymBytes];
-        System.arraycopy(plain, 0, newBuf, 0, plain.length);
-        System.arraycopy(this.keyPair.privateKey, ski, newBuf, plain.length, KyberParams.paramsSymBytes);
-        keccak = Keccak.getInstance(Keccak.ALG_SHA3_512);
+        byte[] plain = this.decrypt(this.encapsulation, indcpaPrivateKey);
+        short ski = (short)(privateKeyBytes - (2 * KyberParams.paramsSymBytes));
+        byte[] newBuf = new byte[(short)(plain.length + KyberParams.paramsSymBytes)];
+        Util.arrayCopyNonAtomic(plain, (short)0, newBuf, (short)0, (short)plain.length);
+        Util.arrayCopyNonAtomic(this.keyPair.privateKey, ski, newBuf, (short)plain.length, KyberParams.paramsSymBytes);
+        this.keccak = Keccak.getInstance(Keccak.ALG_SHA3_512);
         byte[] kr = new byte[64];
-        keccak.doFinal(newBuf, kr);
-        byte[] subKr = new byte[kr.length - KyberParams.paramsSymBytes];
-        System.arraycopy(kr, KyberParams.paramsSymBytes, subKr, 0, subKr.length);
+        this.keccak.doFinal(newBuf, kr);
+        byte[] subKr = new byte[(short)(kr.length - KyberParams.paramsSymBytes)];
+        Util.arrayCopyNonAtomic(kr, KyberParams.paramsSymBytes, subKr, (short)0, (short)subKr.length);
         byte[] cmp = this.encrypt(plain, publicKey, subKr);
-        byte fail = (byte) Kyber.Implementation.Reference.KyberAlgorithm.constantTimeCompare(encapsulation, cmp);
-        keccak = Keccak.getInstance(Keccak.ALG_SHA3_256);
+        byte fail = this.constantTimeCompare(this.encapsulation, cmp);
+        this.keccak = Keccak.getInstance(Keccak.ALG_SHA3_256);
         byte[] krh = new byte[32];
-        keccak.doFinal(encapsulation, krh);
-        int index = privateKeyBytes - KyberParams.paramsSymBytes;
-        for (int i = 0; i < KyberParams.paramsSymBytes; i++)
+        this.keccak.doFinal(this.encapsulation, krh);
+        short index = (short)(privateKeyBytes - KyberParams.paramsSymBytes);
+        for (byte i = 0; i < KyberParams.paramsSymBytes; i++)
         {
-            kr[i] = (byte) ((int) (kr[i] & 0xFF) ^ ((int) (fail & 0xFF) & ((int) (kr[i] & 0xFF) ^ (int) (this.keyPair.privateKey[index] & 0xFF))));
+            byte privateKeyIndex = (byte)(this.keyPair.privateKey[index] & (byte)0xFF);
+            byte krIndex = (byte)(kr[i] & (byte)0xFF);
+            kr[i] = (byte)(krIndex ^ (byte)(fail & (byte)0xFF & (byte)(privateKeyIndex ^ krIndex)));
             index += 1;
         }
-        byte[] tempBuf = new byte[KyberParams.paramsSymBytes + krh.length];
-        System.arraycopy(kr, 0, tempBuf, 0, KyberParams.paramsSymBytes);
-        System.arraycopy(krh, 0, tempBuf, KyberParams.paramsSymBytes, krh.length);
-        keccak = Keccak.getInstance(Keccak.ALG_SHAKE_256);
-        keccak.setShakeDigestLength((short)32);
-        keccak.doFinal(tempBuf, sharedSecretFixedLength);
+        byte[] tempBuf = new byte[(short)(KyberParams.paramsSymBytes + krh.length)];
+        Util.arrayCopyNonAtomic(kr, (short)0, tempBuf, (short)0, KyberParams.paramsSymBytes);
+        Util.arrayCopyNonAtomic(krh, (short)0, tempBuf, KyberParams.paramsSymBytes, (short)krh.length);
+        this.keccak = Keccak.getInstance(Keccak.ALG_SHAKE_256);
+        this.keccak.setShakeDigestLength((short)32);
+        this.keccak.doFinal(tempBuf, sharedSecretFixedLength);
         this.plain = plain;
         this.secretKey = sharedSecretFixedLength;
-
-//        return new KyberDecrypted(plain, sharedSecretFixedLength);
     }
 
-    //phase 3
-//    public byte[] decrypt(byte[] packedCipherText, byte[] privateKey, byte paramsK)
-//    {
-//        UnpackedCipherText unpackedCipherText = unpackCiphertext(packedCipherText, paramsK);
-//        short[][] bp = unpackedCipherText.getBp();
-//        short[] v = unpackedCipherText.getV();
-//        short[][] unpackedPrivateKey = unpackPrivateKey(privateKey, paramsK);
-//        bp = Poly.polyVectorNTT(bp, paramsK);
-//        short[] mp = Poly.polyVectorPointWiseAccMont(unpackedPrivateKey, bp, paramsK);
-//        mp = Poly.polyInvNTTMont(mp);
-//        mp = Poly.polySub(v, mp);
-//        mp = Poly.polyReduce(mp);
-//        return Poly.polyToMsg(mp);
-//    }
+    //phase 3, smart card ok, need opt
+    public byte[] decrypt(byte[] packedCipherText, byte[] privateKey)
+    {
+        this.unpackCiphertext(packedCipherText, this.paramsK);
+        short[] unpackedPrivateKey = this.unpackPrivateKey(privateKey, this.paramsK);
+        this.bp = Poly.getInstance().polyVectorNTT(this.bp, this.paramsK);
+        short[] mp = Poly.getInstance().polyVectorPointWiseAccMont(unpackedPrivateKey, this.bp, this.paramsK);
+        mp = Poly.getInstance().polyInvNTTMont(mp);
+        mp = Poly.getInstance().polySub(this.v, mp);
+        mp = Poly.getInstance().polyReduce(mp);
+        return Poly.getInstance().polyToMsg(mp);
+    }
 
     //phase 2 smart card ok
     public byte[] encrypt(byte[] m, byte[] publicKey, byte[] coins)
@@ -228,17 +226,18 @@ public class KyberAlgorithm
         return r;
     }
 
-    //phase 3
-//    public int constantTimeCompare(byte[] x, byte[] y)
-//    {
-//        if (x.length != y.length) return 1;
-//        byte v = 0;
-//        for (int i = 0; i < x.length; i++)
-//        {
-//            v = (byte) ((int) (v & 0xFF) | ((int) (x[i] & 0xFF) ^ (int) (y[i] & 0xFF)));
-//        }
-//        return Byte.compare(v, (byte) 0);
-//    }
+    //phase 3, smart card ok, need opt
+    public byte constantTimeCompare(byte[] x, byte[] y)
+    {
+        if (x.length != y.length) return (byte)1;
+        byte v = 0;
+        for (short i = 0; i < x.length; i++)
+        {
+            v = (byte)((v & 0xFF) | ((x[i] & 0xFF) ^ (y[i] & 0xFF)));
+        }
+        //Byte.compare(v, (byte)0) - returns always v since implementation of Byte.compare is x-y, where x = v and y = 0; v-0 = v
+        return v;
+    }
 
     //phase 2, makes sure variant is always 32 bytes, this function is ignored since we are always sure it is
 //    private byte[] verifyVariant(byte[] variant) throws Exception
@@ -406,38 +405,35 @@ public class KyberAlgorithm
         return returnArray;
     }
 
-    //phase 3
-//    public UnpackedCipherText unpackCiphertext(byte[] c, byte paramsK)
-//    {
-//        UnpackedCipherText unpackedCipherText = new UnpackedCipherText();
-//        byte[] bpc;
-//        byte[] vc;
-//        switch (paramsK)
-//        {
-//            //Only kyber 512 for now
-//            case 2: default:
-//                bpc = new byte[KyberParams.paramsPolyvecCompressedBytesK512];
+    //phase 3, smart card ok, need opt
+    public void unpackCiphertext(byte[] c, byte paramsK)
+    {
+        byte[] bpc;
+        byte[] vc;
+        switch (paramsK)
+        {
+            //Only kyber 512 for now
+            case 2: default:
+                bpc = new byte[KyberParams.paramsPolyvecCompressedBytesK512];
+                break;
+//            case 3:
+//                bpc = new byte[KyberParams.paramsPolyvecCompressedBytesK768];
 //                break;
-////            case 3:
-////                bpc = new byte[KyberParams.paramsPolyvecCompressedBytesK768];
-////                break;
-////            default:
-////                bpc = new byte[KyberParams.paramsPolyvecCompressedBytesK1024];
-//        }
-//        System.arraycopy(c, 0, bpc, 0, bpc.length);
-//        vc = new byte[c.length - bpc.length];
-//        System.arraycopy(c, bpc.length, vc, 0, vc.length);
-//        unpackedCipherText.setBp(Poly.decompressPolyVector(bpc, paramsK));
-//        unpackedCipherText.setV(Poly.decompressPoly(vc, paramsK));
-//
-//        return unpackedCipherText;
-//    }
+//            default:
+//                bpc = new byte[KyberParams.paramsPolyvecCompressedBytesK1024];
+        }
+        Util.arrayCopyNonAtomic(c, (short)0, bpc, (short)0, (short)bpc.length);
+        vc = new byte[(short)(c.length - bpc.length)];
+        Util.arrayCopyNonAtomic(c, (short)bpc.length, vc, (short)0, (short)vc.length);
+        this.bp = Poly.getInstance().decompressPolyVector(bpc, paramsK);
+        this.v = Poly.getInstance().decompressPoly(vc, paramsK);
+    }
 
-    //phase 3
-//    public static short[][] unpackPrivateKey(byte[] packedPrivateKey, byte paramsK)
-//    {
-//        return Poly.polyVectorFromBytes(packedPrivateKey, paramsK);
-//    }
+    //phase 3, smart card ok
+    public short[] unpackPrivateKey(byte[] packedPrivateKey, byte paramsK)
+    {
+        return Poly.getInstance().polyVectorFromBytes(packedPrivateKey, paramsK);
+    }
 
     //phase 2 smart card ok, check seed
     public void unpackPublicKey(byte[] packedPublicKey, byte paramsK)

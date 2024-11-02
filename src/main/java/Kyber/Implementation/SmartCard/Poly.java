@@ -132,17 +132,32 @@ public final class Poly
         return r;
     }
 
-    public short[] decompressPoly(byte[] a, byte paramsK) {
+    //Smart card ok, need opt
+    public short[] decompressPoly(byte[] a, byte paramsK)
+    {
         short[] r = new short[KyberParams.paramsPolyBytes];
-        int aa = 0;
-        switch (paramsK) {
+        short aa = 0;
+        switch (paramsK)
+        {
             //Only kyber 512 for now
             case 2:
             case 3: default:
-                for (int i = 0; i < KyberParams.paramsN / 2; i++) {
-                    r[2 * i + 0] = (short) (((((int) (a[aa] & 0xFF) & 15) * KyberParams.paramsQ) + 8) >> 4);
-                    r[2 * i + 1] = (short) (((((int) (a[aa] & 0xFF) >> 4) * KyberParams.paramsQ) + 8) >> 4);
-                    aa = aa + 1;
+                for (short i = 0; i < KyberParams.paramsN / 2; i++)
+                {
+                    //(((int) (a[aa] & 0xFF) & 15) * KyberParams.paramsQ)
+                    Arithmetic.multiplyShorts((short)((a[aa] & (short)0xFF) & 15), KyberParams.paramsQ, multiplied);
+                    //((((int) (a[aa] & 0xFF) & 15) * KyberParams.paramsQ) + 8)
+                    Arithmetic.add(multiplied[0], multiplied[1], (short)0, (short)8, multiplied);
+                    //r[(short)(2 * i + 0)] = (short) (((((int) (a[aa] & 0xFF) & 15) * KyberParams.paramsQ) + 8) >> 4);
+                    r[(short)(2 * i + 0)] = (short)(((multiplied[1]>>4)&(short)0xFFF));
+
+                    //(((int) (a[aa] & 0xFF) >> 4) * KyberParams.paramsQ)
+                    Arithmetic.multiplyShorts((short)((a[aa] & 0xFF) >> 4), KyberParams.paramsQ, multiplied);
+                    //((((int) (a[aa] & 0xFF) >> 4) * KyberParams.paramsQ) + 8)
+                    Arithmetic.add(multiplied[0], multiplied[1], (short)0, (short)8, multiplied);
+                    //r[(short)(2 * i + 1)] = (short) (((((int) (a[aa] & 0xFF) >> 4) * KyberParams.paramsQ) + 8) >> 4);
+                    r[(short)(2 * i + 1)] = (short)(((multiplied[1]>>4)&(short)0xFFF));
+                    aa+=1;
                 }
                 break;
 //            default:
@@ -223,15 +238,19 @@ public final class Poly
         return r;
     }
 
-    public byte[] polyToMsg(short[] a) {
+    //smart card ok
+    public byte[] polyToMsg(short[] a)
+    {
         byte[] msg = new byte[KyberParams.paramsSymBytes];
-        int t;
-        a = this.polyConditionalSubQ(a);
-        for (int i = 0; i < KyberParams.paramsN / 8; i++) {
+        short t;
+        a = this.polyConditionalSubQ(a);//opt such that a is no return, but update parameter only
+        for (byte i = 0; i < (byte)(KyberParams.paramsN / 8); i++)
+        {
             msg[i] = 0;
-            for (int j = 0; j < 8; j++) {
-                t = (int) ((((((int) (a[8 * i + j])) << 1) + (KyberParams.paramsQ / 2)) / KyberParams.paramsQ) & 1);
-                msg[i] = (byte) (msg[i] | (t << j));
+            for (byte j = 0; j < 8; j++)
+            {
+                t = (short)(((short)((a[(short)(8 * i + j)] << 1) + (KyberParams.paramsQ / 2)) / KyberParams.paramsQ) & 1);
+                msg[i] = (byte)(msg[i] | (t << j));
             }
         }
         return msg;
@@ -600,9 +619,12 @@ public final class Poly
         return polyA;
     }
 
-    public short[] polySub(short[] polyA, short[] polyB) {
-        for (int i = 0; i < KyberParams.paramsN; i++) {
-            polyA[i] = (short) (polyA[i] - polyB[i]);
+    //smart card ok, need opt, remove polyA return since parameter is already updated
+    public short[] polySub(short[] polyA, short[] polyB)
+    {
+        for (short i = 0; i < KyberParams.paramsN; i++)
+        {
+            polyA[i] = (short)(polyA[i] - polyB[i]);
         }
         return polyA;
     }
@@ -695,24 +717,41 @@ public final class Poly
         return r;
     }
 
-    public short[][] decompressPolyVector(byte[] a, byte paramsK) {
-        short[][] r = new short[paramsK][KyberParams.paramsPolyBytes];
-        int aa = 0;
-        int[] t;
-        switch (paramsK) {
+    //smart card ok, need opt
+    public short[] decompressPolyVector(byte[] a, byte paramsK)
+    {
+        short[] r = new short[(short)(paramsK*KyberParams.paramsPolyBytes)];
+        short aa = 0;
+        short[] t;
+        switch (paramsK)
+        {
             //Only kyber 512 for now
             case 2:
             case 3: default:
-                t = new int[4]; // has to be unsigned..
-                for (byte i = 0; i < paramsK; i++) {
-                    for (int j = 0; j < (KyberParams.paramsN / 4); j++) {
-                        t[0] = ((a[aa + 0] & 0xFF) >> 0) | ((a[aa + 1] & 0xFF) << 8);
-                        t[1] = ((a[aa + 1] & 0xFF) >> 2) | ((a[aa + 2] & 0xFF) << 6);
-                        t[2] = ((a[aa + 2] & 0xFF) >> 4) | ((a[aa + 3] & 0xFF) << 4);
-                        t[3] = ((a[aa + 3] & 0xFF) >> 6) | ((a[aa + 4] & 0xFF) << 2);
-                        aa = aa + 5;
-                        for (int k = 0; k < 4; k++) {
-                            r[i][4 * j + k] = (short) (((long) (t[k] & 0x3FF) * (long) (KyberParams.paramsQ) + 512) >> 10);
+                t = new short[4]; // has to be unsigned..
+                for (byte i = 0; i < paramsK; i++)
+                {
+                    for (byte j = 0; j < (KyberParams.paramsN / 4); j++)
+                    {
+                        t[0] = (short)(((a[(short)(aa + 0)] & (short)0xFF) >> 0) | ((a[(short)(aa + 1)] & (short)0xFF) << 8));
+                        t[1] = (short)(((a[(short)(aa + 1)] & (short)0xFF) >> 2) | ((a[(short)(aa + 2)] & (short)0xFF) << 6));
+                        t[2] = (short)(((a[(short)(aa + 2)] & (short)0xFF) >> 4) | ((a[(short)(aa + 3)] & (short)0xFF) << 4));
+                        t[3] = (short)(((a[(short)(aa + 3)] & (short)0xFF) >> 6) | ((a[(short)(aa + 4)] & (short)0xFF) << 2));
+                        aa+=5;
+                        for (byte k = 0; k < 4; k++)
+                        {
+                            //(long) (t[k] & 0x3FF) * (long) (KyberParams.paramsQ)
+                            Arithmetic.multiplyShorts((short)(t[k] & 0x3FF), KyberParams.paramsQ, multiplied);
+
+                            //((long) (t[k] & 0x3FF) * (long) (KyberParams.paramsQ) + 512)
+                            Arithmetic.add(multiplied[0], multiplied[1], (short)0, (short)512, multiplied);
+
+                            //((long) (t[k] & 0x3FF) * (long) (KyberParams.paramsQ) + 512) >> 10
+                            short value = (short)((multiplied[0]<<6) | (((multiplied[1]>>8)&(short)0xFF) >> 2));
+
+                            this.arrayCopyNonAtomic(r, (short)(i * (short)384), RAM384, (short)0, (short)384);
+                            RAM384[(short)(4 * j + k)] = value;
+                            this.arrayCopyNonAtomic(RAM384, (short)0, r, (short)(i * (short)384), (short)384);
                         }
                     }
                 }
