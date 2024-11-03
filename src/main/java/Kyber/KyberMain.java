@@ -11,7 +11,8 @@ public class KyberMain
                 System.out.println(i);
 //                Server server = new KeyServer(512, true, true);
 //                Server server = new JCEServer(512);
-                Server server = new SmartCardDummyServer(512);
+//                Server server = new SmartCardDummyServer(512);
+                Server server = new SmartCardServer(512, true);
 
 
 //                Client client = new SmartCardDummyClient(512);

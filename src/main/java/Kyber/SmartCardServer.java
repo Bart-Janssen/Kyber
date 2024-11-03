@@ -14,12 +14,13 @@ public class SmartCardServer extends Server
     {
         super(mode);
         this.connectSmartCard(showSmartCardLogging);
+        this.smartCard.selectKyberApplet();
 
         if (super.mode != 512) throw new RuntimeException("Only 512 supported right now");
         this.smartCard.generateKyber512Key();
-        System.out.print("[Smart card server] : Public key:  " + this.smartCard.getPublicKey().length + " | "); print(this.smartCard.getPublicKey());
-        System.out.print("[Smart card server] : Private key: " + this.smartCard.getPrivateKey().length + " | "); print(this.smartCard.getPrivateKey());
-        super.publicKey = this.smartCard.getPublicKey();
+        System.out.println("Public/Private key pair is generated.");
+//        System.out.print("[Smart card server] : Public key:  " + super.publicKey.length + " | "); print(super.publicKey);
+//        System.out.print("[Smart card server] : Private key: " + this.smartCard.getPrivateKey().length + " | "); print(this.smartCard.getPrivateKey());
     }
 
     private void connectSmartCard(boolean showSmartCardLogging)
@@ -29,7 +30,6 @@ public class SmartCardServer extends Server
             List<CardTerminal> readers = TerminalFactory.getDefault().terminals().list();
             Card card = readers.get(0).connect("T=1");
             this.smartCard = new KyberSmartCard(super.mode, card, showSmartCardLogging);
-            this.smartCard.selectKyberApplet();
         }
         catch (Exception e)
         {
@@ -41,13 +41,13 @@ public class SmartCardServer extends Server
     public void decapsulate(byte[] encapsulation) throws Exception
     {
         //Only replace when phase 3
-        super.aesKey = this.smartCard.decapsulate(super.mode,  encapsulation, this.smartCard.getPrivateKey());
+        super.aesKey = this.smartCard.decapsulate(super.mode,  encapsulation);
         System.out.print("[Server]  : Decapsulated secret: " + super.aesKey.length + " | ");super.print(super.aesKey);
     }
 
     @Override
-    public byte[] getPublic()
+    public byte[] getPublic() throws Exception
     {
-        return super.publicKey;
+        return this.smartCard.getPublicKey();
     }
 }

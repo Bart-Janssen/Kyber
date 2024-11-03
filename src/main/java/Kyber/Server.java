@@ -12,7 +12,7 @@ public abstract class Server
         this.mode = mode;
     }
 
-    public abstract byte[] getPublic();
+    public abstract byte[] getPublic() throws Exception;
     public abstract void decapsulate(byte[] encapsulation) throws Exception;
 
     public String decryptAES(String encryptedText) throws Exception

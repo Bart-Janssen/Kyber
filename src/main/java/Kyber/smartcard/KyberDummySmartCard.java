@@ -13,19 +13,16 @@ public class KyberDummySmartCard extends SmartCard
 
     public void generateKyber512Key() throws Exception
     {
-        //replace this with actual smart card apdu
         Applet.getInstance().generateKeys(512);
     }
 
     public byte[] getPublicKey()
     {
-        //replace this with actual smart card apdu
         return Applet.getInstance().getPublicKey();
     }
 
     public byte[] getPrivateKey()
     {
-        //replace this with actual smart card apdu
         return Applet.getInstance().getPrivateKey();
     }
 

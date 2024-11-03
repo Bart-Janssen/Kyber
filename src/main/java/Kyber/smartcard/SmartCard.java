@@ -8,14 +8,27 @@ import javax.smartcardio.ResponseAPDU;
 public abstract class SmartCard
 {
     private final Card card;
-    int keySize;
+    protected int privateKeySize;
+    protected int publicKeySize;
     protected final boolean showSmartCardLogging;
 
     public SmartCard(int mode, Card card, boolean showSmartCardLogging)
     {
-        if (mode == 512) this.keySize = 1632;
-        else if (mode == 768) this.keySize = 2400;
-        else if (mode == 1024) this.keySize = 3168;
+        if (mode == 512)
+        {
+            this.privateKeySize = 1632;
+            this.publicKeySize = 800;
+        }
+        else if (mode == 768)
+        {
+            this.privateKeySize = 2400;
+            this.publicKeySize = 1184;
+        }
+        else if (mode == 1024)
+        {
+            this.privateKeySize = 3168;
+            this.publicKeySize = 1568;
+        }
         else throw new RuntimeException("Mode not supported.");
         this.card = card;
         this.showSmartCardLogging = showSmartCardLogging;

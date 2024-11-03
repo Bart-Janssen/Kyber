@@ -23,8 +23,8 @@ public class KyberKeyStoreSmartCard extends SmartCard
         //Set private key size
         {
             byte[] privateKeySize = new byte[2];
-            privateKeySize[0] = (byte)((super.keySize>>8)&0xFF);
-            privateKeySize[1] = (byte)((super.keySize)&0xFF);
+            privateKeySize[0] = (byte)((super.publicKeySize>>8)&0xFF);
+            privateKeySize[1] = (byte)((super.publicKeySize)&0xFF);
             CommandAPDU command = new APDU(0x00, 0x00, 0x00, 0x00, privateKeySize, 0x00).create();
             ResponseAPDU response = super.transmit(command);
             if (super.showSmartCardLogging) {System.out.print("Command:  "); super.print(command.getBytes());}
@@ -52,21 +52,21 @@ public class KyberKeyStoreSmartCard extends SmartCard
         //Check private key size
         {
             byte[] privateKeySize = new byte[2];
-            privateKeySize[0] = (byte)((super.keySize>>8)&0xFF);
-            privateKeySize[1] = (byte)((super.keySize)&0xFF);
+            privateKeySize[0] = (byte)((super.privateKeySize>>8)&0xFF);
+            privateKeySize[1] = (byte)((super.privateKeySize)&0xFF);
             CommandAPDU command = new APDU(0x00, 0x00, 0x00, 0x03, privateKeySize, 0x00).create();
             ResponseAPDU response = super.transmit(command);
             if (super.showSmartCardLogging) {System.out.print("Command:  "); super.print(command.getBytes());}
             if (super.showSmartCardLogging) {System.out.print("Response: "); super.print(response.getBytes());}
             if (response.getSW() == 0x6389) throw new RuntimeException("Key size does not match in smart card.");
         }
-        byte[] privateKey = new byte[super.keySize];
+        byte[] privateKey = new byte[super.privateKeySize];
         ResponseAPDU response;
         int offset = 0;
         int chunkSize;
         do
         {
-            chunkSize = (offset+255 > super.keySize) ? super.keySize-offset : 255;
+            chunkSize = (offset+255 > super.privateKeySize) ? super.privateKeySize-offset : 255;
             CommandAPDU command = new APDU(0x00,0x00,0x00,0x02,0x00).create();
             response = super.transmit(command);
             if (super.showSmartCardLogging) {System.out.print("Command:  "); super.print(command.getBytes());}

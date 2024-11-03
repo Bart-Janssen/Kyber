@@ -1,6 +1,5 @@
 package Kyber.Implementation.SmartCard;
 
-import Kyber.Implementation.SmartCard.dummy.Util;
 import Kyber.Models.KeyPair;
 import Kyber.Models.KyberEncrypted;
 import Kyber.Models.KyberParams;
@@ -10,7 +9,6 @@ import Kyber.service.KyberService;
 public class Applet extends KyberService
 {
     private static Applet applet;
-    private byte[] sharedSecred = new byte[32];
 
     //Fake keypair in smart card
     private KeyPair keyPair;
@@ -27,7 +25,7 @@ public class Applet extends KyberService
         return this.keyPair.publicKey;
     }
 
-    //Fake apdu call to get private key (for as long this is not yet implemented in the smart card, will be removed at phase 3)
+    //Fake apdu call to get private key
     public byte[] getPrivateKey()
     {
         return this.keyPair.privateKey;
@@ -53,7 +51,7 @@ public class Applet extends KyberService
         {
             byte paramsK = (byte)2;
             this.keyPair = KeyPair.getInstance(paramsK);
-            this.keyPair.publicKey = publicKey;//through APDU
+            this.keyPair.publicKey = publicKey;
             KyberAlgorithm.getInstance(paramsK).encapsulate();
             return new KyberEncrypted(KyberAlgorithm.getInstance(paramsK).encapsulation, KyberAlgorithm.getInstance(paramsK).secretKey);
         }
@@ -67,7 +65,7 @@ public class Applet extends KyberService
         {
             byte paramsK = (byte)2;
             this.keyPair = KeyPair.getInstance(paramsK);
-            this.keyPair.privateKey = privateKey;//through APDU
+            this.keyPair.privateKey = privateKey;
             KyberAlgorithm.getInstance(paramsK).encapsulation = encapsulation;
             KyberAlgorithm.getInstance(paramsK).decapsulate(KyberParams.paramsIndcpaSecretKeyBytesK512, KyberParams.paramsIndcpaPublicKeyBytesK512, KyberParams.Kyber512SKBytes);
             return KyberAlgorithm.getInstance(paramsK).secretKey;

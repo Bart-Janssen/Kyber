@@ -54,7 +54,7 @@ public class KyberAlgorithm
     {
         byte[] variant = new byte[32];
         RandomData.OneShot random = RandomData.OneShot.open(RandomData.ALG_TRNG);
-//        random.nextBytes(variant, (short)0, (short)32);
+        random.nextBytes(variant, (short)0, (short)32);
         random.close();
         byte[] publicKey = KeyPair.getInstance((byte)2).publicKey;
 
@@ -272,9 +272,9 @@ public class KyberAlgorithm
         byte[] pkh = new byte[encodedHash.length];
         Util.arrayCopyNonAtomic(encodedHash, (short)0, pkh, (short)0, (short)encodedHash.length);
         byte[] rnd = JCSystem.makeTransientByteArray((short)32, JCSystem.CLEAR_ON_DESELECT);
-//            RandomData.OneShot random = RandomData.OneShot.open(RandomData.ALG_TRNG);
-//            random.nextBytes(rnd, (short)0, (short)32);
-//            random.close();
+        RandomData.OneShot random = RandomData.OneShot.open(RandomData.ALG_TRNG);
+        random.nextBytes(rnd, (short)0, (short)32);
+        random.close();
         short offsetEnd = (short)keyPair.privateKey.length;
         Util.arrayCopyNonAtomic(this.keyPair.privateKey, (short)0, privateKeyFixedLength, (short)0, offsetEnd);
         Util.arrayCopyNonAtomic(this.keyPair.publicKey, (short)0, privateKeyFixedLength, offsetEnd, (short)this.keyPair.publicKey.length);
