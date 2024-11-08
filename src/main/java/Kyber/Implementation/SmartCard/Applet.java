@@ -37,7 +37,7 @@ public class Applet extends KyberService
         if (mode == 512)
         {
             byte paramsK = (byte)2;
-            KyberAlgorithm.getInstance(paramsK).generateKeys(KyberParams.Kyber512SKBytes);
+            KyberAlgorithm.getInstance(paramsK).generateKeys();
             this.keyPair = KeyPair.getInstance(paramsK);
             return this.keyPair;//ignored
         }

@@ -23,7 +23,7 @@ public class SmartCardDummyServer extends Server
     {
         //Only replace when phase 3
         super.aesKey = this.smartCard.decapsulate(super.mode,  encapsulation, this.smartCard.getPrivateKey());
-        System.out.print("[Server]  : Decapsulated secret: " + super.aesKey.length + " | ");super.print(super.aesKey);
+        System.out.print("[Smart card server]  : Decapsulated secret: " + super.aesKey.length + " | ");super.print(super.aesKey);
     }
 
     @Override
