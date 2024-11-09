@@ -22,7 +22,12 @@ public final class Poly
     private static short[] RAM384_2;
     private static byte[] RAM384B;
     private static byte[] RAM33B;
-
+    private static byte[] RAM4B_1;
+    private static byte[] RAM4B_2;
+    private static byte[] RAM4B_3;
+    private static short[] RAM2S_1;
+    private static short[] RAM2S_2;
+    
     private Poly()
     {
         multiplied = JCSystem.makeTransientShortArray((short)2, JCSystem.CLEAR_ON_DESELECT);
@@ -33,6 +38,11 @@ public final class Poly
         RAM384B = JCSystem.makeTransientByteArray((short)384, JCSystem.CLEAR_ON_DESELECT);
         RAM33B = JCSystem.makeTransientByteArray((short)33, JCSystem.CLEAR_ON_DESELECT);
         RAM32S = JCSystem.makeTransientShortArray((short)32, JCSystem.CLEAR_ON_DESELECT);
+        RAM4B_1 = JCSystem.makeTransientByteArray((short)4, JCSystem.CLEAR_ON_DESELECT);
+        RAM4B_2 = JCSystem.makeTransientByteArray((short)4, JCSystem.CLEAR_ON_DESELECT);
+        RAM4B_3 = JCSystem.makeTransientByteArray((short)4, JCSystem.CLEAR_ON_DESELECT);
+        RAM2S_1 = JCSystem.makeTransientShortArray((short)2, JCSystem.CLEAR_ON_DESELECT);
+        RAM2S_2 = JCSystem.makeTransientShortArray((short)2, JCSystem.CLEAR_ON_DESELECT);
     }
 
     protected static void print(byte[] data)
@@ -258,9 +268,9 @@ public final class Poly
     public void generateCBDPoly(byte[] buf, byte paramsK, short[] result)
     {
         //buf = RAM384B
-        byte[] d = new byte[4];
-        byte[] t = new byte[4];
-        byte[] tempT = new byte[4];
+        //d = RAM4B_1
+        //t = RAM4B_2
+        //tempT = RAM4B_3
 
         short a, b;
         switch (paramsK)
@@ -269,57 +279,63 @@ public final class Poly
                 for (byte i = 0; i < KyberParams.paramsN / 4; i++)
                 {
                     //t = Poly.convertByteTo24BitUnsignedInt(Arrays.copyOfRange(buf, (3 * i), buf.length));
-                    t[0] = buf[(short)(3*i+2)];
-                    t[1] = buf[(short)(3*i+1)];
-                    t[2] = buf[(short)(3*i+0)];
+                    RAM4B_2[0] = buf[(short)(3*i+2)];
+                    RAM4B_2[1] = buf[(short)(3*i+1)];
+                    RAM4B_2[2] = buf[(short)(3*i+0)];
+                    RAM4B_2[3] = (byte)0x00;
 
                     //t & 0x00249249
-                    d[0] = (byte)(t[0] & 0x24);
-                    d[1] = (byte)(t[1] & 0x92);
-                    d[2] = (byte)(t[2] & 0x49);
+                    RAM4B_1[0] = (byte)(RAM4B_2[0] & 0x24);
+                    RAM4B_1[1] = (byte)(RAM4B_2[1] & 0x92);
+                    RAM4B_1[2] = (byte)(RAM4B_2[2] & 0x49);
+                    RAM4B_1[3] = (byte)0x00;
 
                     //t >> 1
-                    t[2] = (byte)(((t[2]&0xFF)>>1) | ((t[1]&0xFF)<<7));
-                    t[1] = (byte)(((t[1]&0xFF)>>1) | ((t[0]&0xFF)<<7));
-                    t[0] = (byte)(((t[0]&0xFF)>>1));
+                    RAM4B_2[3] = (byte)0x00;
+                    RAM4B_2[2] = (byte)(((RAM4B_2[2]&0xFF)>>1) | ((RAM4B_2[1]&0xFF)<<7));
+                    RAM4B_2[1] = (byte)(((RAM4B_2[1]&0xFF)>>1) | ((RAM4B_2[0]&0xFF)<<7));
+                    RAM4B_2[0] = (byte)(((RAM4B_2[0]&0xFF)>>1));
 
                     //(t >> 1) & 0x00249249
-                    tempT[0] = (byte)(t[0] & 0x24);
-                    tempT[1] = (byte)(t[1] & 0x92);
-                    tempT[2] = (byte)(t[2] & 0x49);
+                    RAM4B_3[0] = (byte)(RAM4B_2[0] & 0x24);
+                    RAM4B_3[1] = (byte)(RAM4B_2[1] & 0x92);
+                    RAM4B_3[2] = (byte)(RAM4B_2[2] & 0x49);
+                    RAM4B_3[3] = (byte)0x00;
 
                     //d = d + (t >> 1) & 0x00249249
-                    Arithmetic.sumByteArrays(d,tempT);
+                    Arithmetic.sumByteArrays(RAM4B_1,RAM4B_3);
 
                     //t >> 1
-                    t[2] = (byte)(((t[2]&0xFF)>>1) | ((t[1]&0xFF)<<7));
-                    t[1] = (byte)(((t[1]&0xFF)>>1) | ((t[0]&0xFF)<<7));
-                    t[0] = (byte)(((t[0]&0xFF)>>1));
+                    RAM4B_2[3] = (byte)0x00;
+                    RAM4B_2[2] = (byte)(((RAM4B_2[2]&0xFF)>>1) | ((RAM4B_2[1]&0xFF)<<7));
+                    RAM4B_2[1] = (byte)(((RAM4B_2[1]&0xFF)>>1) | ((RAM4B_2[0]&0xFF)<<7));
+                    RAM4B_2[0] = (byte)(((RAM4B_2[0]&0xFF)>>1));
 
                     //(t >> 1) & 0x00249249
-                    tempT[0] = (byte)(t[0] & 0x24);
-                    tempT[1] = (byte)(t[1] & 0x92);
-                    tempT[2] = (byte)(t[2] & 0x49);
+                    RAM4B_3[0] = (byte)(RAM4B_2[0] & 0x24);
+                    RAM4B_3[1] = (byte)(RAM4B_2[1] & 0x92);
+                    RAM4B_3[2] = (byte)(RAM4B_2[2] & 0x49);
+                    RAM4B_3[3] = (byte)0x00;
 
                     //d = d + (t >> 1) & 0x00249249
-                    Arithmetic.sumByteArrays(d,tempT);
+                    Arithmetic.sumByteArrays(RAM4B_1,RAM4B_3);
 
                     //for (int j = 0; j < 4; j++) //replaced loop with static 4 assignments
                     //See generateCBDPoly.txt
-                    a = (short)(((d[2]&0xFF)>>0) & 0x7);                          //a = (short)((d >> (6 * j + 0)) & 0x7);
-                    b = (short)((((d[1]&0xFF)<<5) | ((d[2]&0xFF)>>3)) & 0x7);//3  //b = (short)((d >> (6 * j + KyberParams.paramsETAK512)) & 0x7);
+                    a = (short)(((RAM4B_1[2]&0xFF)>>0) & 0x7);                          //a = (short)((d >> (6 * j + 0)) & 0x7);
+                    b = (short)((((RAM4B_1[1]&0xFF)<<5) | ((RAM4B_1[2]&0xFF)>>3)) & 0x7);//3  //b = (short)((d >> (6 * j + KyberParams.paramsETAK512)) & 0x7);
                     result[(short)(4 * i + 0)] = (short)(a - b);                  //r[4 * i + j] = (short)(a - b);
 
-                    a = (short)((((d[1]&0xFF)<<2) | ((d[2]&0xFF)>>6)) & 0x7);//6  //a = (short)((d >> (6 * j + 0)) & 0x7);
-                    b = (short)((((d[0]&0xFF)<<7) | ((d[1]&0xFF)>>1)) & 0x7);//9  //b = (short)((d >> (6 * j + KyberParams.paramsETAK512)) & 0x7);
+                    a = (short)((((RAM4B_1[1]&0xFF)<<2) | ((RAM4B_1[2]&0xFF)>>6)) & 0x7);//6  //a = (short)((d >> (6 * j + 0)) & 0x7);
+                    b = (short)((((RAM4B_1[0]&0xFF)<<7) | ((RAM4B_1[1]&0xFF)>>1)) & 0x7);//9  //b = (short)((d >> (6 * j + KyberParams.paramsETAK512)) & 0x7);
                     result[(short)(4 * i + 1)] = (short)(a - b);                  //r[4 * i + j] = (short)(a - b);
 
-                    a = (short)((((d[0]&0xFF)<<4) | ((d[1]&0xFF)>>4)) & 0x7);//12 //a = (short)((d >> (6 * j + 0)) & 0x7);
-                    b = (short)((((d[0]&0xFF)<<1) | ((d[1]&0xFF)>>7)) & 0x7);//15 //b = (short)((d >> (6 * j + KyberParams.paramsETAK512)) & 0x7);
+                    a = (short)((((RAM4B_1[0]&0xFF)<<4) | ((RAM4B_1[1]&0xFF)>>4)) & 0x7);//12 //a = (short)((d >> (6 * j + 0)) & 0x7);
+                    b = (short)((((RAM4B_1[0]&0xFF)<<1) | ((RAM4B_1[1]&0xFF)>>7)) & 0x7);//15 //b = (short)((d >> (6 * j + KyberParams.paramsETAK512)) & 0x7);
                     result[(short)(4 * i + 2)] = (short)(a - b);                  //r[4 * i + j] = (short)(a - b);
 
-                    a = (short)(((d[0]&0xFF)>>2) & 0x7);//18                      //a = (short)((d >> (6 * j + 0)) & 0x7);
-                    b = (short)(((d[0]&0xFF)>>5) & 0x7);//21                      //b = (short)((d >> (6 * j + KyberParams.paramsETAK512)) & 0x7);
+                    a = (short)(((RAM4B_1[0]&0xFF)>>2) & 0x7);//18                      //a = (short)((d >> (6 * j + 0)) & 0x7);
+                    b = (short)(((RAM4B_1[0]&0xFF)>>5) & 0x7);//21                      //b = (short)((d >> (6 * j + KyberParams.paramsETAK512)) & 0x7);
                     result[(short)(4 * i + 3)] = (short)(a - b);                  //r[4 * i + j] = (short)(a - b);
                 }
                 break;
@@ -327,63 +343,63 @@ public final class Poly
                 for (byte i = 0; i < KyberParams.paramsN / 8; i++)
                 {
                     //t = this.convertByteTo32BitUnsignedInt(Arrays.copyOfRange(buf, (4 * i), buf.length));
-                    t[0] = buf[(short)(4*i+3)];
-                    t[1] = buf[(short)(4*i+2)];
-                    t[2] = buf[(short)(4*i+1)];
-                    t[3] = buf[(short)(4*i+0)];
+                    RAM4B_2[0] = buf[(short)(4*i+3)];
+                    RAM4B_2[1] = buf[(short)(4*i+2)];
+                    RAM4B_2[2] = buf[(short)(4*i+1)];
+                    RAM4B_2[3] = buf[(short)(4*i+0)];
 
                     //t & 0x55555555
-                    d[0] = (byte)(t[0] & 0x55);
-                    d[1] = (byte)(t[1] & 0x55);
-                    d[2] = (byte)(t[2] & 0x55);
-                    d[3] = (byte)(t[3] & 0x55);
+                    RAM4B_1[0] = (byte)(RAM4B_2[0] & 0x55);
+                    RAM4B_1[1] = (byte)(RAM4B_2[1] & 0x55);
+                    RAM4B_1[2] = (byte)(RAM4B_2[2] & 0x55);
+                    RAM4B_1[3] = (byte)(RAM4B_2[3] & 0x55);
 
                     //t >> 1
-                    t[3] = (byte)(((t[3]&0xFF)>>1) | ((t[2]&0xFF)<<7));
-                    t[2] = (byte)(((t[2]&0xFF)>>1) | ((t[1]&0xFF)<<7));
-                    t[1] = (byte)(((t[1]&0xFF)>>1) | ((t[0]&0xFF)<<7));
-                    t[0] = (byte)(((t[0]&0xFF)>>1));
+                    RAM4B_2[3] = (byte)(((RAM4B_2[3]&0xFF)>>1) | ((RAM4B_2[2]&0xFF)<<7));
+                    RAM4B_2[2] = (byte)(((RAM4B_2[2]&0xFF)>>1) | ((RAM4B_2[1]&0xFF)<<7));
+                    RAM4B_2[1] = (byte)(((RAM4B_2[1]&0xFF)>>1) | ((RAM4B_2[0]&0xFF)<<7));
+                    RAM4B_2[0] = (byte)(((RAM4B_2[0]&0xFF)>>1));
 
                     //(t >> 1) & 0x55555555
-                    tempT[0] = (byte)(t[0] & 0x55);
-                    tempT[1] = (byte)(t[1] & 0x55);
-                    tempT[2] = (byte)(t[2] & 0x55);
-                    tempT[3] = (byte)(t[3] & 0x55);
+                    RAM4B_3[0] = (byte)(RAM4B_2[0] & 0x55);
+                    RAM4B_3[1] = (byte)(RAM4B_2[1] & 0x55);
+                    RAM4B_3[2] = (byte)(RAM4B_2[2] & 0x55);
+                    RAM4B_3[3] = (byte)(RAM4B_2[3] & 0x55);
 
                     //d = d + (t >> 1) & 0x55555555
-                    Arithmetic.sumByteArrays(d,tempT);
+                    Arithmetic.sumByteArrays(RAM4B_1,RAM4B_3);
 
                     //for (int j = 0; j < 8; j++) //replaced loop with static 8 assignments
-                    a = (short)(((d[3]&0xFF)>>0) & 0x3);
-                    b = (short)((((d[2]&0xFF)<<6) | ((d[3]&0xFF)>>2)) & 0x3); //2
+                    a = (short)(((RAM4B_1[3]&0xFF)>>0) & 0x3);
+                    b = (short)((((RAM4B_1[2]&0xFF)<<6) | ((RAM4B_1[3]&0xFF)>>2)) & 0x3); //2
                     result[(short)(8 * i + 0)] = (short)(a - b);
 
-                    a = (short)((((d[2]&0xFF)<<4) | ((d[3]&0xFF)>>4)) & 0x3); //4
-                    b = (short)((((d[2]&0xFF)<<2) | ((d[3]&0xFF)>>6)) & 0x3); //6
+                    a = (short)((((RAM4B_1[2]&0xFF)<<4) | ((RAM4B_1[3]&0xFF)>>4)) & 0x3); //4
+                    b = (short)((((RAM4B_1[2]&0xFF)<<2) | ((RAM4B_1[3]&0xFF)>>6)) & 0x3); //6
                     result[(short)(8 * i + 1)] = (short)(a - b);
 
-                    a = (short)((((d[2]&0xFF)<<0) | ((d[3]&0xFF)>>8)) & 0x3); //8
-                    b = (short)((((d[1]&0xFF)<<6) | ((d[2]&0xFF)>>2)) & 0x3); //10
+                    a = (short)((((RAM4B_1[2]&0xFF)<<0) | ((RAM4B_1[3]&0xFF)>>8)) & 0x3); //8
+                    b = (short)((((RAM4B_1[1]&0xFF)<<6) | ((RAM4B_1[2]&0xFF)>>2)) & 0x3); //10
                     result[(short)(8 * i + 2)] = (short)(a - b);
 
-                    a = (short)((((d[1]&0xFF)<<4) | ((d[2]&0xFF)>>4)) & 0x3); //12
-                    b = (short)((((d[1]&0xFF)<<2) | ((d[2]&0xFF)>>6)) & 0x3); //14
+                    a = (short)((((RAM4B_1[1]&0xFF)<<4) | ((RAM4B_1[2]&0xFF)>>4)) & 0x3); //12
+                    b = (short)((((RAM4B_1[1]&0xFF)<<2) | ((RAM4B_1[2]&0xFF)>>6)) & 0x3); //14
                     result[(short)(8 * i + 3)] = (short)(a - b);
 
-                    a = (short)((((d[1]&0xFF)<<0) | ((d[2]&0xFF)>>8)) & 0x3); //16
-                    b = (short)((((d[0]&0xFF)<<6) | ((d[1]&0xFF)>>2)) & 0x3); //18
+                    a = (short)((((RAM4B_1[1]&0xFF)<<0) | ((RAM4B_1[2]&0xFF)>>8)) & 0x3); //16
+                    b = (short)((((RAM4B_1[0]&0xFF)<<6) | ((RAM4B_1[1]&0xFF)>>2)) & 0x3); //18
                     result[(short)(8 * i + 4)] = (short)(a - b);
 
-                    a = (short)((((d[0]&0xFF)<<4) | ((d[1]&0xFF)>>4)) & 0x3); //20
-                    b = (short)((((d[0]&0xFF)<<2) | ((d[1]&0xFF)>>6)) & 0x3); //22
+                    a = (short)((((RAM4B_1[0]&0xFF)<<4) | ((RAM4B_1[1]&0xFF)>>4)) & 0x3); //20
+                    b = (short)((((RAM4B_1[0]&0xFF)<<2) | ((RAM4B_1[1]&0xFF)>>6)) & 0x3); //22
                     result[(short)(8 * i + 5)] = (short)(a - b);
 
-                    a = (short)((((d[0]&0xFF)<<0) | ((d[1]&0xFF)>>8)) & 0x3); //24
-                    b = (short)(((d[0]&0xFF)>>2) & 0x3); //26
+                    a = (short)((((RAM4B_1[0]&0xFF)<<0) | ((RAM4B_1[1]&0xFF)>>8)) & 0x3); //24
+                    b = (short)(((RAM4B_1[0]&0xFF)>>2) & 0x3); //26
                     result[(short)(8 * i + 6)] = (short)(a - b);
 
-                    a = (short)(((d[0]&0xFF)>>4) & 0x3); //28
-                    b = (short)(((d[0]&0xFF)>>6) & 0x3); //30
+                    a = (short)(((RAM4B_1[0]&0xFF)>>4) & 0x3); //28
+                    b = (short)(((RAM4B_1[0]&0xFF)>>6) & 0x3); //30
                     result[(short)(8 * i + 7)] = (short)(a - b);
                 }
         }
@@ -481,24 +497,24 @@ public final class Poly
     //smart card ok
     public void polyBaseMulMont(short[] polyA, short[] polyB)
     {
-        short[] rx = new short[2];//todo -> RAM 2 byte
-        short[] ry = new short[2];//todo -> RAM 2 byte
+        //rx = RAM2S_1
+        //ry = RAM2S_2
         for (byte i = 0; i < (KyberParams.paramsN / 4); i++)
         {
             this.baseMultiplier(
                     polyA[(short)(4 * i + 0)], polyA[(short)(4 * i + 1)],
                     polyB[(short)(4 * i + 0)], polyB[(short)(4 * i + 1)],
                     Poly.nttZetas[64 + i]
-            , rx);
+            , RAM2S_1);
             this.baseMultiplier(
                     polyA[(short)(4 * i + 2)], polyA[(short)(4 * i + 3)],
                     polyB[(short)(4 * i + 2)], polyB[(short)(4 * i + 3)],
                     (short)(-1 * Poly.nttZetas[(short)(64 + i)])
-            , ry);
-            polyA[(short)(4 * i + 0)] = rx[0];
-            polyA[(short)(4 * i + 1)] = rx[1];
-            polyA[(short)(4 * i + 2)] = ry[0];
-            polyA[(short)(4 * i + 3)] = ry[1];
+            , RAM2S_2);
+            polyA[(short)(4 * i + 0)] = RAM2S_1[0];
+            polyA[(short)(4 * i + 1)] = RAM2S_1[1];
+            polyA[(short)(4 * i + 2)] = RAM2S_2[0];
+            polyA[(short)(4 * i + 3)] = RAM2S_2[1];
         }
     }
 

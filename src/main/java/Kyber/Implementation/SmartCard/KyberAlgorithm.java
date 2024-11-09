@@ -20,8 +20,11 @@ public class KyberAlgorithm
 
     protected KyberAlgorithm(byte paramsK)
     {
+        //Create keccak instance so object is created, reserving EEPROM at startup rather than runtime
+        this.keccak = Keccak.getInstance(Keccak.ALG_SHA3_256);
         this.paramsK = paramsK;
         this.keyPair = KeyPair.getInstance(paramsK);
+        poly = Poly.getInstance();
         switch (paramsK)
         {
             case 2:
@@ -65,6 +68,7 @@ public class KyberAlgorithm
     private byte paramsK;
     private Keccak keccak;
     private final KeyPair keyPair;
+    private Poly poly;
 
     //Conditional arrays based on paramsK
     byte[] vCompress;//packCiphertext
@@ -355,9 +359,9 @@ public class KyberAlgorithm
         //EEPROM384B_X_PARAMS_K = fullSeed
 
         this.keccak = Keccak.getInstance(Keccak.ALG_SHA3_512);
-//        RandomData.OneShot random = RandomData.OneShot.open(RandomData.ALG_TRNG);
-//        random.nextBytes(publicSeed, (short)0, (short)32);
-//        random.close();
+        RandomData.OneShot random = RandomData.OneShot.open(RandomData.ALG_TRNG);
+        random.nextBytes(this.EEPROM32B_1, (short)0, (short)32);
+        random.close();
         this.keccak.doFinal(this.EEPROM32B_1, this.EEPROM384B_X_PARAMS_K);
         Util.arrayCopyNonAtomic(this.EEPROM384B_X_PARAMS_K, (short)0, this.EEPROM32B_1, (short)0, KyberParams.paramsSymBytes);
         Util.arrayCopyNonAtomic(this.EEPROM384B_X_PARAMS_K, KyberParams.paramsSymBytes, this.EEPROM32B_2, (short)0, KyberParams.paramsSymBytes);
