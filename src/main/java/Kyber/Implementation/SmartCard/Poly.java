@@ -27,7 +27,7 @@ public final class Poly
     private static byte[] RAM4B_3;
     private static short[] RAM2S_1;
     private static short[] RAM2S_2;
-    
+
     private Poly()
     {
         multiplied = JCSystem.makeTransientShortArray((short)2, JCSystem.CLEAR_ON_DESELECT);
@@ -91,7 +91,7 @@ public final class Poly
             3127, 3042, 1907, 1836, 1517, 359, 758, 1441
     };
 
-    //smart card ok, need opt
+    //smart card ok, opt ok
     public void compressPoly(short[] polyA, byte paramsK, byte[] r)
     {
         this.polyConditionalSubQ(polyA);
@@ -207,6 +207,7 @@ public final class Poly
         }
     }
 
+    //smart card ok, opt ok
     public void polyFromBytes(byte[] a, short[] r)
     {
         for (short i = 0; i < KyberParams.paramsN / 2; i++)
@@ -216,7 +217,7 @@ public final class Poly
         }
     }
 
-    //smart card ok, need opt
+    //smart card ok, opt ok
     public void polyFromData(byte[] msg, short[] r)
     {
         short mask;
@@ -462,7 +463,7 @@ public final class Poly
         return jc[0];
     }
 
-    //smart card ok
+    //smart card ok, opt ok
     public void polyInvNTTMont(short[] r)
     {
         this.invNTT(r);
@@ -737,16 +738,16 @@ public final class Poly
         }
     }
 
-    //smart card ok, needs opt
+    //smart card ok, opt ok
     public void polyVectorFromBytes(byte[] polyA, byte paramsK, short[] r)
     {
         for (byte i = 0; i < paramsK; i++)
         {
+            //paramsK is max 4 here
+            //max end = 4+1 = 5 * 384 = 1920 - 4*384 = 384 always
             short start = (short)(i * KyberParams.paramsPolyBytes);
-            short end = (short)((i + 1) * KyberParams.paramsPolyBytes);
-            byte[] temp = new byte[(short)(end-start)];
-            Util.arrayCopyNonAtomic(polyA, start, temp, (short)0, (short)(end-start));
-            this.polyFromBytes(temp, RAM384);
+            Util.arrayCopyNonAtomic(polyA, start, RAM384B, (short)0, (short)384);
+            this.polyFromBytes(RAM384B, RAM384);
             this.arrayCopyNonAtomic(RAM384, (short)0, r, (short)(i*384), (short)384);
         }
     }
