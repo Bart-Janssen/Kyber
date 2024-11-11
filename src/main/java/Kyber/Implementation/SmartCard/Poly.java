@@ -143,10 +143,9 @@ public final class Poly
         }
     }
 
-    //Smart card ok, need opt
-    public short[] decompressPoly(byte[] a, byte paramsK)
+    //Smart card ok, opt ok
+    public void decompressPoly(byte[] a, byte paramsK, short[] r)
     {
-        short[] r = new short[KyberParams.paramsPolyBytes];
         short aa = 0;
         switch (paramsK)
         {
@@ -188,7 +187,6 @@ public final class Poly
 //                    }
 //                }
         }
-        return r;
     }
 
     //Smart card ok, opt ok
@@ -666,31 +664,31 @@ public final class Poly
         }
     }
 
-    //smart card ok, need opt
-    public short[] decompressPolyVector(byte[] a, byte paramsK)
+    //smart card ok, opt ok
+    public void decompressPolyVector(byte[] a, byte paramsK, short[] r)
     {
-        short[] r = new short[(short)(paramsK*KyberParams.paramsPolyBytes)];
+        //t = RAM32S, t is 4 for paramsK = 2 or 3, and t = 8 for paramsK = 4
+
         short aa = 0;
-        short[] t;
         switch (paramsK)
         {
             //Only kyber 512 for now
             case 2:
             case 3: default:
-                t = new short[4]; // has to be unsigned..
+
                 for (byte i = 0; i < paramsK; i++)
                 {
                     for (byte j = 0; j < (KyberParams.paramsN / 4); j++)
                     {
-                        t[0] = (short)(((a[(short)(aa + 0)] & (short)0xFF) >> 0) | ((a[(short)(aa + 1)] & (short)0xFF) << 8));
-                        t[1] = (short)(((a[(short)(aa + 1)] & (short)0xFF) >> 2) | ((a[(short)(aa + 2)] & (short)0xFF) << 6));
-                        t[2] = (short)(((a[(short)(aa + 2)] & (short)0xFF) >> 4) | ((a[(short)(aa + 3)] & (short)0xFF) << 4));
-                        t[3] = (short)(((a[(short)(aa + 3)] & (short)0xFF) >> 6) | ((a[(short)(aa + 4)] & (short)0xFF) << 2));
+                        RAM32S[0] = (short)(((a[(short)(aa + 0)] & (short)0xFF) >> 0) | ((a[(short)(aa + 1)] & (short)0xFF) << 8));
+                        RAM32S[1] = (short)(((a[(short)(aa + 1)] & (short)0xFF) >> 2) | ((a[(short)(aa + 2)] & (short)0xFF) << 6));
+                        RAM32S[2] = (short)(((a[(short)(aa + 2)] & (short)0xFF) >> 4) | ((a[(short)(aa + 3)] & (short)0xFF) << 4));
+                        RAM32S[3] = (short)(((a[(short)(aa + 3)] & (short)0xFF) >> 6) | ((a[(short)(aa + 4)] & (short)0xFF) << 2));
                         aa+=5;
                         for (byte k = 0; k < 4; k++)
                         {
                             //(long) (t[k] & 0x3FF) * (long) (KyberParams.paramsQ)
-                            Arithmetic.multiplyShorts((short)(t[k] & 0x3FF), KyberParams.paramsQ, multiplied);
+                            Arithmetic.multiplyShorts((short)(RAM32S[k] & 0x3FF), KyberParams.paramsQ, multiplied);
 
                             //((long) (t[k] & 0x3FF) * (long) (KyberParams.paramsQ) + 512)
                             Arithmetic.add(multiplied[0], multiplied[1], (short)0, (short)512, multiplied);
@@ -724,7 +722,6 @@ public final class Poly
 //                    }
 //                }
         }
-        return r;
     }
 
     //Smart card ok, opt ok

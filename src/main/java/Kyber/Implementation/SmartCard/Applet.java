@@ -67,7 +67,7 @@ public class Applet extends KyberService
             this.keyPair = KeyPair.getInstance(paramsK);
             this.keyPair.privateKey = privateKey;
             KyberAlgorithm.getInstance(paramsK).encapsulation = encapsulation;
-            KyberAlgorithm.getInstance(paramsK).decapsulate(KyberParams.paramsIndcpaSecretKeyBytesK512, KyberParams.paramsIndcpaPublicKeyBytesK512, KyberParams.Kyber512SKBytes);
+            KyberAlgorithm.getInstance(paramsK).decapsulate();
             return KyberAlgorithm.getInstance(paramsK).secretKey;
         }
         throw new RuntimeException("Mode not supported");
