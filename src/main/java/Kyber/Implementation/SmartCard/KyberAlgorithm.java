@@ -302,7 +302,7 @@ public class KyberAlgorithm
                 Util.arrayCopyNonAtomic(this.EEPROM672B_1,(short)0, this.EEPROM504B_1,(short)0, (short)504);
                 this.generateUniform(this.EEPROM504B_1, (short)504, KyberParams.paramsN);
                 short ui = this.uniformI;
-                Poly.getInstance().arrayCopyNonAtomic(this.EEPROM384, (short)0, result, (short)(((i*2)+j)*384), (short)384);
+                Poly.getInstance().arrayCopyNonAtomic(this.EEPROM384, (short)0, result, (short)(((i*this.paramsK)+j)*384), (short)384);
                 while (ui < KyberParams.paramsN)
                 {
                     Util.arrayCopyNonAtomic(this.EEPROM672B_1,(short)504, this.EEPROM504B_1,(short)0, (short)168);
