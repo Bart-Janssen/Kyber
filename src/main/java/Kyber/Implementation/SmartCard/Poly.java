@@ -17,11 +17,11 @@ public final class Poly
     private static short[] multiplied;
     private static short[] jc;
     private static short[] result;
-    private static short[] RAM32S;
-    private static short[] RAM384;
-    private static short[] RAM384_2;
-    private static byte[] RAM384B;
-    private static byte[] RAM33B;
+    private static short[] RAM32S_1;
+    private static short[] RAM384S_1;
+    private static short[] RAM384S_2;
+    private static byte[] RAM384B_1;
+    private static byte[] RAM33B_1;
     private static byte[] RAM4B_1;
     private static byte[] RAM4B_2;
     private static byte[] RAM4B_3;
@@ -33,11 +33,11 @@ public final class Poly
         multiplied = JCSystem.makeTransientShortArray((short)2, JCSystem.CLEAR_ON_DESELECT);
         jc = JCSystem.makeTransientShortArray((short)2, JCSystem.CLEAR_ON_DESELECT);
         result = JCSystem.makeTransientShortArray((short)2, JCSystem.CLEAR_ON_DESELECT);
-        RAM384 = JCSystem.makeTransientShortArray((short)384, JCSystem.CLEAR_ON_DESELECT);
-        RAM384_2 = JCSystem.makeTransientShortArray((short)384, JCSystem.CLEAR_ON_DESELECT);
-        RAM384B = JCSystem.makeTransientByteArray((short)384, JCSystem.CLEAR_ON_DESELECT);
-        RAM33B = JCSystem.makeTransientByteArray((short)33, JCSystem.CLEAR_ON_DESELECT);
-        RAM32S = JCSystem.makeTransientShortArray((short)32, JCSystem.CLEAR_ON_DESELECT);
+        RAM384S_1 = JCSystem.makeTransientShortArray((short)384, JCSystem.CLEAR_ON_DESELECT);
+        RAM384S_2 = JCSystem.makeTransientShortArray((short)384, JCSystem.CLEAR_ON_DESELECT);
+        RAM384B_1 = JCSystem.makeTransientByteArray((short)384, JCSystem.CLEAR_ON_DESELECT);
+        RAM33B_1 = JCSystem.makeTransientByteArray((short)33, JCSystem.CLEAR_ON_DESELECT);
+        RAM32S_1 = JCSystem.makeTransientShortArray((short)32, JCSystem.CLEAR_ON_DESELECT);
         RAM4B_1 = JCSystem.makeTransientByteArray((short)4, JCSystem.CLEAR_ON_DESELECT);
         RAM4B_2 = JCSystem.makeTransientByteArray((short)4, JCSystem.CLEAR_ON_DESELECT);
         RAM4B_3 = JCSystem.makeTransientByteArray((short)4, JCSystem.CLEAR_ON_DESELECT);
@@ -117,13 +117,13 @@ public final class Poly
                         Arithmetic.divide(result[0], result[1], (short)0, KyberParams.paramsQ, result);
 
                         //(byte) (((((polyA[8 * i + j]) << 4) + (KyberParams.paramsQ / 2)) / (KyberParams.paramsQ)) & 15)
-                        //RAM384B = t = new byte[8];
-                        RAM384B[j] = (byte)(result[1] & 15);
+                        //RAM384B_1 = t = new byte[8];
+                        RAM384B_1[j] = (byte)(result[1] & 15);
                     }
-                    r[(short)(rr + 0)] = (byte)(RAM384B[0] | (RAM384B[1] << 4));
-                    r[(short)(rr + 1)] = (byte)(RAM384B[2] | (RAM384B[3] << 4));
-                    r[(short)(rr + 2)] = (byte)(RAM384B[4] | (RAM384B[5] << 4));
-                    r[(short)(rr + 3)] = (byte)(RAM384B[6] | (RAM384B[7] << 4));
+                    r[(short)(rr + 0)] = (byte)(RAM384B_1[0] | (RAM384B_1[1] << 4));
+                    r[(short)(rr + 1)] = (byte)(RAM384B_1[2] | (RAM384B_1[3] << 4));
+                    r[(short)(rr + 2)] = (byte)(RAM384B_1[4] | (RAM384B_1[5] << 4));
+                    r[(short)(rr + 3)] = (byte)(RAM384B_1[6] | (RAM384B_1[7] << 4));
                     rr+=4;
                 }
                 break;
@@ -256,15 +256,15 @@ public final class Poly
             default:
                 l = KyberParams.paramsETAK768K1024 * KyberParams.paramsN / 4;
         }
-        //p = RAM384B
-        this.generatePRFByteArray(l, seed, nonce, RAM384B);
-        this.generateCBDPoly(RAM384B, paramsK, result);
+        //p = RAM384B_1
+        this.generatePRFByteArray(l, seed, nonce, RAM384B_1);
+        this.generateCBDPoly(RAM384B_1, paramsK, result);
     }
 
     //smart card ok, need optimization
     public void generateCBDPoly(byte[] buf, byte paramsK, short[] result)
     {
-        //buf = RAM384B
+        //buf = RAM384B_1
         //d = RAM4B_1
         //t = RAM4B_2
         //tempT = RAM4B_3
@@ -405,13 +405,13 @@ public final class Poly
     //smart card ok, opt ok
     public void generatePRFByteArray(short l, byte[] key, byte nonce, byte[] result)
     {
-        //result = RAM384B
-        //RAM33B = newKey, static 33 since key is always 32, so newKey = 32 + 1
-        Util.arrayCopyNonAtomic(key, (short)0, RAM33B, (short)0, (short)32);
-        RAM33B[32] = nonce;
+        //result = RAM384B_1
+        //RAM33B_1 = newKey, static 33 since key is always 32, so newKey = 32 + 1
+        Util.arrayCopyNonAtomic(key, (short)0, RAM33B_1, (short)0, (short)32);
+        RAM33B_1[32] = nonce;
         Keccak keccak = Keccak.getInstance(Keccak.ALG_SHAKE_256);
         keccak.setShakeDigestLength(l);
-        keccak.doFinal(RAM33B, result);
+        keccak.doFinal(RAM33B_1, result);
     }
 
     // smart card ok, opt ok
@@ -613,11 +613,11 @@ public final class Poly
                         {
                             //t[k] = ((long) (((long) ((long) (a[i][4 * j + k]) << 10) + (long) (KyberParams.paramsQ / 2)) / (long) (KyberParams.paramsQ)) & 0x3ff);
 
-                            this.arrayCopyNonAtomic(a,(short)(i*384),RAM384,(short)0,(short)384);
+                            this.arrayCopyNonAtomic(a,(short)(i*384),RAM384S_1,(short)0,(short)384);
 
                             //((long) (a[i][4 * j + k]) << 10)
-                            short shHigh = (short)((RAM384[(short)(4 * j + k)]) >> 6);
-                            short shLow = (short)((RAM384[(short)(4 * j + k)]) << 10);
+                            short shHigh = (short)((RAM384S_1[(short)(4 * j + k)]) >> 6);
+                            short shLow = (short)((RAM384S_1[(short)(4 * j + k)]) << 10);
 
                             //((long) ((long) (a[i][4 * j + k]) << 10) + (long) (KyberParams.paramsQ / 2))
                             Arithmetic.add(shHigh, shLow, (short)0, (short)(KyberParams.paramsQ / 2), result);
@@ -626,13 +626,13 @@ public final class Poly
                             Arithmetic.divide(result[0], result[1], (short)0, KyberParams.paramsQ, result);
 
                             //((long) (((long) ((long) (a[i][4 * j + k]) << 10) + (long) (KyberParams.paramsQ / 2)) / (long) (KyberParams.paramsQ)) & 0x3ff)
-                            RAM32S[k] = (short)(result[1]&0x3FF);
+                            RAM32S_1[k] = (short)(result[1]&0x3FF);
                         }
-                        r[(short)(rr + 0)] = (byte)(RAM32S[0] >> 0);
-                        r[(short)(rr + 1)] = (byte)((RAM32S[0] >> 8) | (RAM32S[1] << 2));
-                        r[(short)(rr + 2)] = (byte)((RAM32S[1] >> 6) | (RAM32S[2] << 4));
-                        r[(short)(rr + 3)] = (byte)((RAM32S[2] >> 4) | (RAM32S[3] << 6));
-                        r[(short)(rr + 4)] = (byte)((RAM32S[3] >> 2));
+                        r[(short)(rr + 0)] = (byte)(RAM32S_1[0] >> 0);
+                        r[(short)(rr + 1)] = (byte)((RAM32S_1[0] >> 8) | (RAM32S_1[1] << 2));
+                        r[(short)(rr + 2)] = (byte)((RAM32S_1[1] >> 6) | (RAM32S_1[2] << 4));
+                        r[(short)(rr + 3)] = (byte)((RAM32S_1[2] >> 4) | (RAM32S_1[3] << 6));
+                        r[(short)(rr + 4)] = (byte)((RAM32S_1[3] >> 2));
                         rr+=5;
                     }
                 }
@@ -664,7 +664,7 @@ public final class Poly
     //smart card ok, opt ok
     public void decompressPolyVector(byte[] a, byte paramsK, short[] r)
     {
-        //t = RAM32S, t is 4 for paramsK = 2 or 3, and t = 8 for paramsK = 4
+        //t = RAM32S_1, t is 4 for paramsK = 2 or 3, and t = 8 for paramsK = 4
 
         short aa = 0;
         switch (paramsK)
@@ -676,15 +676,15 @@ public final class Poly
                 {
                     for (byte j = 0; j < (KyberParams.paramsN / 4); j++)
                     {
-                        RAM32S[0] = (short)(((a[(short)(aa + 0)] & (short)0xFF) >> 0) | ((a[(short)(aa + 1)] & (short)0xFF) << 8));
-                        RAM32S[1] = (short)(((a[(short)(aa + 1)] & (short)0xFF) >> 2) | ((a[(short)(aa + 2)] & (short)0xFF) << 6));
-                        RAM32S[2] = (short)(((a[(short)(aa + 2)] & (short)0xFF) >> 4) | ((a[(short)(aa + 3)] & (short)0xFF) << 4));
-                        RAM32S[3] = (short)(((a[(short)(aa + 3)] & (short)0xFF) >> 6) | ((a[(short)(aa + 4)] & (short)0xFF) << 2));
+                        RAM32S_1[0] = (short)(((a[(short)(aa + 0)] & (short)0xFF) >> 0) | ((a[(short)(aa + 1)] & (short)0xFF) << 8));
+                        RAM32S_1[1] = (short)(((a[(short)(aa + 1)] & (short)0xFF) >> 2) | ((a[(short)(aa + 2)] & (short)0xFF) << 6));
+                        RAM32S_1[2] = (short)(((a[(short)(aa + 2)] & (short)0xFF) >> 4) | ((a[(short)(aa + 3)] & (short)0xFF) << 4));
+                        RAM32S_1[3] = (short)(((a[(short)(aa + 3)] & (short)0xFF) >> 6) | ((a[(short)(aa + 4)] & (short)0xFF) << 2));
                         aa+=5;
                         for (byte k = 0; k < 4; k++)
                         {
                             //(long) (t[k] & 0x3FF) * (long) (KyberParams.paramsQ)
-                            Arithmetic.multiplyShorts((short)(RAM32S[k] & 0x3FF), KyberParams.paramsQ, multiplied);
+                            Arithmetic.multiplyShorts((short)(RAM32S_1[k] & 0x3FF), KyberParams.paramsQ, multiplied);
 
                             //((long) (t[k] & 0x3FF) * (long) (KyberParams.paramsQ) + 512)
                             Arithmetic.add(multiplied[0], multiplied[1], (short)0, (short)512, multiplied);
@@ -692,9 +692,9 @@ public final class Poly
                             //((long) (t[k] & 0x3FF) * (long) (KyberParams.paramsQ) + 512) >> 10
                             short value = (short)((multiplied[0]<<6) | (((multiplied[1]>>8)&(short)0xFF) >> 2));
 
-                            this.arrayCopyNonAtomic(r, (short)(i * (short)384), RAM384, (short)0, (short)384);
-                            RAM384[(short)(4 * j + k)] = value;
-                            this.arrayCopyNonAtomic(RAM384, (short)0, r, (short)(i * (short)384), (short)384);
+                            this.arrayCopyNonAtomic(r, (short)(i * (short)384), RAM384S_1, (short)0, (short)384);
+                            RAM384S_1[(short)(4 * j + k)] = value;
+                            this.arrayCopyNonAtomic(RAM384S_1, (short)0, r, (short)(i * (short)384), (short)384);
                         }
                     }
                 }
@@ -725,9 +725,9 @@ public final class Poly
     {
         for (byte i = 0; i < paramsK; i++)
         {
-            this.arrayCopyNonAtomic(polyA, (short)(i * KyberParams.paramsPolyBytes), RAM384, (short)0, KyberParams.paramsPolyBytes);
-            this.polyToBytes(RAM384, RAM384B);
-            Util.arrayCopyNonAtomic(RAM384B, (short)0, r, (short)(i * KyberParams.paramsPolyBytes), (short)RAM384B.length);
+            this.arrayCopyNonAtomic(polyA, (short)(i * KyberParams.paramsPolyBytes), RAM384S_1, (short)0, KyberParams.paramsPolyBytes);
+            this.polyToBytes(RAM384S_1, RAM384B_1);
+            Util.arrayCopyNonAtomic(RAM384B_1, (short)0, r, (short)(i * KyberParams.paramsPolyBytes), (short)RAM384B_1.length);
         }
     }
 
@@ -739,9 +739,9 @@ public final class Poly
             //paramsK is max 4 here
             //max end = 4+1 = 5 * 384 = 1920 - 4*384 = 384 always
             short start = (short)(i * KyberParams.paramsPolyBytes);
-            Util.arrayCopyNonAtomic(polyA, start, RAM384B, (short)0, (short)384);
-            this.polyFromBytes(RAM384B, RAM384);
-            this.arrayCopyNonAtomic(RAM384, (short)0, r, (short)(i*384), (short)384);
+            Util.arrayCopyNonAtomic(polyA, start, RAM384B_1, (short)0, (short)384);
+            this.polyFromBytes(RAM384B_1, RAM384S_1);
+            this.arrayCopyNonAtomic(RAM384S_1, (short)0, r, (short)(i*384), (short)384);
         }
     }
 
@@ -753,9 +753,9 @@ public final class Poly
         {
             //i=0, row = 384, 0*384 = 0   -> 384
             //i=1, row = 384, 1*384 = 384 -> 768
-            this.arrayCopyNonAtomic(r, (short)(i * (short)384), RAM384, (short)0, (short)384);
-            this.polyNTT(RAM384);
-            this.arrayCopyNonAtomic(RAM384, (short)0, r, (short)(i * (short)384), (short)384);
+            this.arrayCopyNonAtomic(r, (short)(i * (short)384), RAM384S_1, (short)0, (short)384);
+            this.polyNTT(RAM384S_1);
+            this.arrayCopyNonAtomic(RAM384S_1, (short)0, r, (short)(i * (short)384), (short)384);
         }
     }
 
@@ -766,9 +766,9 @@ public final class Poly
         {
             //i=0, row = 384, 0*384 = 0   -> 384
             //i=1, row = 384, 1*384 = 384 -> 768
-            this.arrayCopyNonAtomic(r, (short)(i * (short)384), RAM384, (short)0, (short)384);
-            this.polyInvNTTMont(RAM384);
-            this.arrayCopyNonAtomic(RAM384, (short)0, r, (short)(i * (short)384), (short)384);
+            this.arrayCopyNonAtomic(r, (short)(i * (short)384), RAM384S_1, (short)0, (short)384);
+            this.polyInvNTTMont(RAM384S_1);
+            this.arrayCopyNonAtomic(RAM384S_1, (short)0, r, (short)(i * (short)384), (short)384);
         }
     }
 
@@ -776,15 +776,15 @@ public final class Poly
     public void polyVectorPointWiseAccMont(short[] polyA, short[] polyB, byte paramsK, short[] result)
     {
         short rowSize = 384;
-        this.arrayCopyNonAtomic(polyB, (short)0, RAM384, (short)0, rowSize);
+        this.arrayCopyNonAtomic(polyB, (short)0, RAM384S_1, (short)0, rowSize);
         this.arrayCopyNonAtomic(polyA, (short)0, result, (short)0, rowSize);
-        this.polyBaseMulMont(result, RAM384);
+        this.polyBaseMulMont(result, RAM384S_1);
         for (byte i = 1; i < paramsK; i++)
         {
-            this.arrayCopyNonAtomic(polyA, (short)(i*rowSize), RAM384_2, (short)0, rowSize);
-            this.arrayCopyNonAtomic(polyB, (short)(i*rowSize), RAM384, (short)0, rowSize);
-            this.polyBaseMulMont(RAM384_2, RAM384);
-            this.polyAdd(result, RAM384_2);
+            this.arrayCopyNonAtomic(polyA, (short)(i*rowSize), RAM384S_2, (short)0, rowSize);
+            this.arrayCopyNonAtomic(polyB, (short)(i*rowSize), RAM384S_1, (short)0, rowSize);
+            this.polyBaseMulMont(RAM384S_2, RAM384S_1);
+            this.polyAdd(result, RAM384S_2);
         }
         this.polyReduce(result);
     }
@@ -797,9 +797,9 @@ public final class Poly
         {
             //i=0, row = 384, 0*384 = 0   -> 384
             //i=1, row = 384, 1*384 = 384 -> 768
-            this.arrayCopyNonAtomic(r, (short)(i * (short)384), RAM384, (short)0, (short)384);
-            this.polyReduce(RAM384);
-            this.arrayCopyNonAtomic(RAM384, (short)0, r, (short)(i * (short)384), (short)384);
+            this.arrayCopyNonAtomic(r, (short)(i * (short)384), RAM384S_1, (short)0, (short)384);
+            this.polyReduce(RAM384S_1);
+            this.arrayCopyNonAtomic(RAM384S_1, (short)0, r, (short)(i * (short)384), (short)384);
         }
     }
 
@@ -808,9 +808,9 @@ public final class Poly
     {
         for (byte i = 0; i < paramsK; i++)
         {
-            this.arrayCopyNonAtomic(r,(short)(i*384),RAM384,(short)0,(short)384);
-            this.polyConditionalSubQ(RAM384);
-            this.arrayCopyNonAtomic(RAM384,(short)0,r,(short)(i*384),(short)384);
+            this.arrayCopyNonAtomic(r,(short)(i*384),RAM384S_1,(short)0,(short)384);
+            this.polyConditionalSubQ(RAM384S_1);
+            this.arrayCopyNonAtomic(RAM384S_1,(short)0,r,(short)(i*384),(short)384);
         }
     }
 
