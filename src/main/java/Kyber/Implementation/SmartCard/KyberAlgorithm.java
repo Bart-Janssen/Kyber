@@ -364,7 +364,7 @@ public class KyberAlgorithm
         this.keccak.doFinal(this.keyPair.publicKey, EEPROM32B_1);
         RandomData.OneShot random = RandomData.OneShot.open(RandomData.ALG_TRNG);
         if (KyberMain.random) random.nextBytes(this.EEPROM32B_2, (short)0, (short)32);
-        else for (byte i = 0; i < EEPROM32B_2.length; i++){EEPROM32B_2[i] = (byte)0x00;}//either this or the other line
+        else for (byte i = 0; i < EEPROM32B_2.length; i++){EEPROM32B_2[i] = (byte)0x00;}
         random.close();
         short offsetEnd = (short)(this.paramsK * KyberParams.paramsPolyBytes);
         Util.arrayCopyNonAtomic(this.keyPair.publicKey, (short)0, this.keyPair.privateKey, offsetEnd, (short)this.keyPair.publicKey.length);
