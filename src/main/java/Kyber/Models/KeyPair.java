@@ -14,11 +14,15 @@ public class KeyPair
         if (keyPair == null)
         {
             keyPair = new KeyPair();
-            //Only kyber 512 for now
             if (paramsK == (short)2)
             {
                 keyPair.privateKey = new byte[(short)1632];
-                keyPair.publicKey = new byte[(short)800];
+                keyPair.publicKey = new byte[KyberParams.paramsIndcpaPublicKeyBytesK512];
+            }
+            if (paramsK == (short)3)
+            {
+                keyPair.privateKey = new byte[(short)2400];
+                keyPair.publicKey = new byte[KyberParams.paramsIndcpaPublicKeyBytesK768];
             }
         }
         return keyPair;

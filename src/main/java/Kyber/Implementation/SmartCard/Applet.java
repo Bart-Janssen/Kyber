@@ -41,6 +41,13 @@ public class Applet extends KyberService
             this.keyPair = KeyPair.getInstance(paramsK);
             return this.keyPair;//ignored
         }
+        if (mode == 768)
+        {
+            byte paramsK = (byte)3;
+            KyberAlgorithm.getInstance(paramsK).generateKeys();
+            this.keyPair = KeyPair.getInstance(paramsK);
+            return this.keyPair;//ignored
+        }
         throw new RuntimeException("Mode not supported");
     }
 
@@ -55,6 +62,14 @@ public class Applet extends KyberService
             KyberAlgorithm.getInstance(paramsK).encapsulate();
             return new KyberEncrypted(KyberAlgorithm.getInstance(paramsK).encapsulation, KyberAlgorithm.getInstance(paramsK).secretKey);
         }
+        if (mode == 768)
+        {
+            byte paramsK = (byte)3;
+            this.keyPair = KeyPair.getInstance(paramsK);
+            this.keyPair.publicKey = publicKey;
+            KyberAlgorithm.getInstance(paramsK).encapsulate();
+            return new KyberEncrypted(KyberAlgorithm.getInstance(paramsK).encapsulation, KyberAlgorithm.getInstance(paramsK).secretKey);
+        }
         throw new RuntimeException("Mode not supported");
     }
 
@@ -64,6 +79,15 @@ public class Applet extends KyberService
         if (mode == 512)
         {
             byte paramsK = (byte)2;
+            this.keyPair = KeyPair.getInstance(paramsK);
+            this.keyPair.privateKey = privateKey;
+            KyberAlgorithm.getInstance(paramsK).encapsulation = encapsulation;
+            KyberAlgorithm.getInstance(paramsK).decapsulate();
+            return KyberAlgorithm.getInstance(paramsK).secretKey;
+        }
+        if (mode == 768)
+        {
+            byte paramsK = (byte)3;
             this.keyPair = KeyPair.getInstance(paramsK);
             this.keyPair.privateKey = privateKey;
             KyberAlgorithm.getInstance(paramsK).encapsulation = encapsulation;

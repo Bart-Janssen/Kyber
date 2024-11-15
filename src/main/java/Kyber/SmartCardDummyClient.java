@@ -11,7 +11,6 @@ public class SmartCardDummyClient extends Client
     {
         super.mode = mode;
         this.smartCard = new KyberDummySmartCard(super.mode, null, false);
-        if (super.mode != 512) throw new RuntimeException("Only 512 supported right now");
     }
 
     @Override

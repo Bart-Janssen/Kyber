@@ -98,7 +98,6 @@ public final class Poly
         short rr = 0;
         switch (paramsK)
         {
-            //Only kyber 512 for now
             case 2:
             case 3: default:
                 for (byte i = 0; i < KyberParams.paramsN / 8; i++)
@@ -149,7 +148,6 @@ public final class Poly
         short aa = 0;
         switch (paramsK)
         {
-            //Only kyber 512 for now
             case 2:
             case 3: default:
                 for (short i = 0; i < KyberParams.paramsN / 2; i++)
@@ -604,7 +602,6 @@ public final class Poly
         short rr = 0;
         switch (paramsK)
         {
-            //Only kyber 512 for now
             case 2:
             case 3: default:
                 //Kyber 512 only for now, perhaps need to be increased for Kyber 768 and Kyber 1024
@@ -672,7 +669,6 @@ public final class Poly
         short aa = 0;
         switch (paramsK)
         {
-            //Only kyber 512 for now
             case 2:
             case 3: default:
 

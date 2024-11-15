@@ -11,9 +11,9 @@ public class KyberDummySmartCard extends SmartCard
         super(mode, card, showSmartCardLogging);
     }
 
-    public void generateKyber512Key() throws Exception
+    public void generateKyberKey(int mode) throws Exception
     {
-        Applet.getInstance().generateKeys(512);
+        Applet.getInstance().generateKeys(mode);
     }
 
     public byte[] getPublicKey()
