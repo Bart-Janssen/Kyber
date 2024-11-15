@@ -310,7 +310,7 @@ public class KyberAlgorithm
                     short ctrn = this.uniformI;
                     for (short k = ui; k < KyberParams.paramsN; k++)
                     {
-                        result[(short)(((i * 2 + j) * 384) + k)] = this.EEPROM384[(short)(k - ui)];
+                        result[(short)(((i * this.paramsK + j) * 384) + k)] = this.EEPROM384[(short)(k - ui)];
                     }
                     ui += ctrn;
                 }
