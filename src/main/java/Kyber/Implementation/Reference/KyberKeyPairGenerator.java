@@ -1,5 +1,6 @@
 package Kyber.Implementation.Reference;
 
+import Kyber.KyberMain;
 import Kyber.Models.KeyPair;
 import Kyber.Models.KyberParams;
 import Kyber.Models.KyberUniformRandom;
@@ -24,7 +25,7 @@ public class KyberKeyPairGenerator
         byte[] pkh = new byte[encodedHash.length];
         System.arraycopy(encodedHash, 0, pkh, 0, encodedHash.length);
         byte[] rnd = new byte[KyberParams.paramsSymBytes];
-        rand.nextBytes(rnd);
+        if (KyberMain.random) rand.nextBytes(rnd);
         int offsetEnd = packedPrivateKey.length;
         System.arraycopy(packedPrivateKey, 0, privateKeyFixedLength, 0, offsetEnd);
         System.arraycopy(packedPublicKey, 0, privateKeyFixedLength, offsetEnd, packedPublicKey.length);
@@ -48,7 +49,7 @@ public class KyberKeyPairGenerator
         byte[] pkh = new byte[encodedHash.length];
         System.arraycopy(encodedHash, 0, pkh, 0, encodedHash.length);
         byte[] rnd = new byte[KyberParams.paramsSymBytes];
-        rand.nextBytes(rnd);
+        if (KyberMain.random) rand.nextBytes(rnd);
 
         int offsetEnd = packedPrivateKey.length;
         System.arraycopy(packedPrivateKey, 0, privateKeyFixedLength, 0, offsetEnd);
@@ -74,7 +75,7 @@ public class KyberKeyPairGenerator
         byte[] pkh = new byte[encodedHash.length];
         System.arraycopy(encodedHash, 0, pkh, 0, encodedHash.length);
         byte[] rnd = new byte[KyberParams.paramsSymBytes];
-        rand.nextBytes(rnd);
+        if (KyberMain.random) rand.nextBytes(rnd);
 
         int offsetEnd = packedPrivateKey.length;
         System.arraycopy(packedPrivateKey, 0, privateKeyFixedLength, 0, offsetEnd);
@@ -97,7 +98,7 @@ public class KyberKeyPairGenerator
 
         MessageDigest h = MessageDigest.getInstance("SHA3-512");
         SecureRandom sr = SecureRandom.getInstanceStrong();
-        sr.nextBytes(publicSeed);
+        if (KyberMain.random) sr.nextBytes(publicSeed);
         byte[] fullSeed = h.digest(publicSeed);
 
         System.arraycopy(fullSeed, 0, publicSeed, 0, KyberParams.paramsSymBytes);

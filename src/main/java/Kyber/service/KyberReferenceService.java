@@ -2,8 +2,10 @@ package Kyber.service;
 
 import Kyber.Implementation.Reference.KyberAlgorithm;
 import Kyber.Implementation.Reference.KyberKeyPairGenerator;
+import Kyber.KyberMain;
 import Kyber.Models.KeyPair;
 import Kyber.Models.KyberEncrypted;
+
 import java.security.SecureRandom;
 
 public class KyberReferenceService extends KyberService
@@ -21,7 +23,7 @@ public class KyberReferenceService extends KyberService
     public KyberEncrypted encapsulate(int mode, byte[] publicKey) throws Exception
     {
         byte[] random = new byte[32];
-        SecureRandom.getInstanceStrong().nextBytes(random);
+        if (KyberMain.random) SecureRandom.getInstanceStrong().nextBytes(random);
         if (mode == 512) return new KyberAlgorithm().encrypt512(random, publicKey);
         if (mode == 768) return new KyberAlgorithm().encrypt768(random, publicKey);
         if (mode == 1024) return new KyberAlgorithm().encrypt1024(random, publicKey);

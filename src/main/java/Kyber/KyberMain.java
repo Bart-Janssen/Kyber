@@ -2,13 +2,15 @@ package Kyber;
 
 public class KyberMain
 {
+    public static boolean random = false;
+    
     public static void main(String[] args)
     {
         try
         {
             for (int i = 1; i <= 1; i++)
             {
-                int mode = 768;
+                int mode = 512;
                 System.out.println("Iteration: " + i);
 //                Server server = new KeyServer(mode, true, true);
 //                Server server = new JCEServer(mode);
