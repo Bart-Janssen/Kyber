@@ -24,6 +24,11 @@ public class KeyPair
                 keyPair.privateKey = new byte[(short)2400];
                 keyPair.publicKey = new byte[KyberParams.paramsIndcpaPublicKeyBytesK768];
             }
+            if (paramsK == (short)4)
+            {
+                keyPair.privateKey = new byte[(short)3168];
+                keyPair.publicKey = new byte[KyberParams.paramsIndcpaPublicKeyBytesK1024];
+            }
         }
         return keyPair;
     }
