@@ -345,7 +345,7 @@ public class KyberAlgorithm
 //            byte[] emptyBytes = new byte[KyberParams.paramsSymBytes - variant.length];
 //            for (int i = 0; i < emptyBytes.length; ++i)
 //            {
-//                emptyBytes[i] = (byte) 0;
+//                emptyBytes[i] = (byte)0;
 //            }
 //            System.arraycopy(emptyBytes, 0, tempData, variant.length, emptyBytes.length);
 //            return tempData;
