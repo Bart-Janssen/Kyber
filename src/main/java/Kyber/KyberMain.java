@@ -10,12 +10,13 @@ public class KyberMain
         {
             for (int i = 1; i <= 1; i++)
             {
-                int mode = 512;
+                int mode = 1024;
                 System.out.println("Iteration: " + i);
 //                Server server = new KeyServer(mode, true, true);
 //                Server server = new JCEServer(mode);
                 Server server = new SmartCardDummyServer(mode);
 //                Server server = new SmartCardServer(mode, true);
+
 
 
                 Client client = new SmartCardDummyClient(mode);
@@ -25,12 +26,10 @@ public class KyberMain
 
                 byte[] encapsulation = client.encapsulate();
 
-
                 //Send encapsulation over insecure network to server
                 System.out.print("[Network] : Encapsulated secret: " + encapsulation.length + " | ");print(encapsulation);
 
                 server.decapsulate(encapsulation);
-
 
                 //Secret is now shared
 

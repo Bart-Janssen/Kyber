@@ -533,6 +533,7 @@ public class KyberAlgorithm
                 Util.arrayCopyNonAtomic(packedPublicKey, (short)0, EEPROM1536B_1, (short)0, KyberParams.paramsPolyvecBytesK1024);
                 Poly.getInstance().polyVectorFromBytes(EEPROM1536B_1, paramsK, this.publicKeyPolyvec);
                 Util.arrayCopyNonAtomic(packedPublicKey, KyberParams.paramsPolyvecBytesK1024, this.seed, (short)0, (short)32);
+                break;
         }
     }
 }

@@ -104,19 +104,14 @@ public final class Poly
                 {
                     for (byte j = 0; j < 8; j++)
                     {
-                        //t[j] = (byte) (((((polyA[8 * i + j]) << 4) + (KyberParams.paramsQ / 2)) / (KyberParams.paramsQ)) & 15);
-
                         //((polyA[8 * i + j]) << 4)
                         short shHigh = (short)(polyA[(short)(8 * i + j)] >> 12);
                         short shLow = (short)(polyA[(short)(8 * i + j)] << 4);
-
                         //(((polyA[8 * i + j]) << 4) + (KyberParams.paramsQ / 2))
                         Arithmetic.add(shHigh, shLow, (short)0, (short)(KyberParams.paramsQ / 2), result);
-
                         //((((polyA[8 * i + j]) << 4) + (KyberParams.paramsQ / 2)) / (KyberParams.paramsQ))
                         Arithmetic.divide(result[0], result[1], (short)0, KyberParams.paramsQ, result);
-
-                        //(byte) (((((polyA[8 * i + j]) << 4) + (KyberParams.paramsQ / 2)) / (KyberParams.paramsQ)) & 15)
+                        //t[j] = (byte)(((((polyA[8 * i + j]) << 4) + (KyberParams.paramsQ / 2)) / (KyberParams.paramsQ)) & 15);
                         //RAM384B_1 = t = new byte[8];
                         RAM384B_1[j] = (byte)(result[1] & 15);
                     }
@@ -128,20 +123,29 @@ public final class Poly
                 }
                 break;
             default:
-                byte[] t = new byte[8];
                 for (byte i = 0; i < KyberParams.paramsN / 8; i++)
                 {
                     for (byte j = 0; j < 8; j++)
                     {
-                        t[j] = (byte) (((((polyA[8 * i + j]) << 5) + (KyberParams.paramsQ / 2)) / (KyberParams.paramsQ)) & 31);
+                        //((polyA[(short)(8 * i + j)]) << 5)
+                        short shHigh = (short)(polyA[(short)(8 * i + j)] >> 11);
+                        short shLow = (short)(polyA[(short)(8 * i + j)] << 5);
+                        //(((polyA[(short)(8 * i + j)]) << 5) + (KyberParams.paramsQ / 2))
+                        Arithmetic.add(shHigh, shLow, (short)0, (short)(KyberParams.paramsQ / 2), result);
+                        //((((polyA[(short)(8 * i + j)]) << 5) + (KyberParams.paramsQ / 2)) / (KyberParams.paramsQ))
+                        Arithmetic.divide(result[0], result[1], (short)0, KyberParams.paramsQ, result);
+                        //t[j] = (byte)(((((polyA[(short)(8 * i + j)]) << 5) + (KyberParams.paramsQ / 2)) / (KyberParams.paramsQ)) & 31);
+                        //RAM384B_1 = t = new byte[8];
+                        RAM384B_1[j] = (byte)(result[1] & 31);
                     }
-                    r[rr + 0] = (byte) ((t[0] >> 0) | (t[1] << 5));
-                    r[rr + 1] = (byte) ((t[1] >> 3) | (t[2] << 2) | (t[3] << 7));
-                    r[rr + 2] = (byte) ((t[3] >> 1) | (t[4] << 4));
-                    r[rr + 3] = (byte) ((t[4] >> 4) | (t[5] << 1) | (t[6] << 6));
-                    r[rr + 4] = (byte) ((t[6] >> 2) | (t[7] << 3));
+                    r[(short)(rr + 0)] = (byte)((RAM384B_1[0] >> 0) | (RAM384B_1[1] << 5));
+                    r[(short)(rr + 1)] = (byte)((RAM384B_1[1] >> 3) | (RAM384B_1[2] << 2) | (RAM384B_1[3] << 7));
+                    r[(short)(rr + 2)] = (byte)((RAM384B_1[3] >> 1) | (RAM384B_1[4] << 4));
+                    r[(short)(rr + 3)] = (byte)((RAM384B_1[4] >> 4) | (RAM384B_1[5] << 1) | (RAM384B_1[6] << 6));
+                    r[(short)(rr + 4)] = (byte)((RAM384B_1[6] >> 2) | (RAM384B_1[7] << 3));
                     rr+=5;
                 }
+                break;
         }
     }
 
@@ -172,23 +176,29 @@ public final class Poly
                 }
                 break;
             default:
-                short[] t = new short[8];
                 for (byte i = 0; i < KyberParams.paramsN / 8; i++)
                 {
-                    t[0] = (short)(((int) (a[aa + 0] & 0xFF) >> 0) & 0xFF);
-                    t[1] = (short)(((byte) (((int) (a[aa + 0] & 0xFF) >> 5)) | (byte) ((int) (a[aa + 1] & 0xFF) << 3)) & 0xFF);
-                    t[2] = (short)(((int) (a[aa + 1] & 0xFF) >> 2) & 0xFF);
-                    t[3] = (short)(((byte) (((int) (a[aa + 1] & 0xFF) >> 7)) | (byte) ((int) (a[aa + 2] & 0xFF) << 1)) & 0xFF);
-                    t[4] = (short)(((byte) (((int) (a[aa + 2] & 0xFF) >> 4)) | (byte) ((int) (a[aa + 3] & 0xFF) << 4)) & 0xFF);
-                    t[5] = (short)(((int) (a[aa + 3] & 0xFF) >> 1) & 0xFF);
-                    t[6] = (short)(((byte) (((int) (a[aa + 3] & 0xFF) >> 6)) | (byte) ((int) (a[aa + 4] & 0xFF) << 2)) & 0xFF);
-                    t[7] = (short)(((int) (a[aa + 4] & 0xFF) >> 3) & 0xFF);
+                    //RAM32S_1 = t = new short[8];
+                    RAM32S_1[0] = (short)(((a[(short)(aa + 0)] & 0xFF) >> 0) & 0xFF);
+                    RAM32S_1[1] = (short)(((byte)(((a[(short)(aa + 0)] & 0xFF) >> 5)) | (byte)((a[(short)(aa + 1)] & 0xFF) << 3)) & 0xFF);
+                    RAM32S_1[2] = (short)(((a[(short)(aa + 1)] & 0xFF) >> 2) & 0xFF);
+                    RAM32S_1[3] = (short)(((byte)(((a[(short)(aa + 1)] & 0xFF) >> 7)) | (byte)((a[(short)(aa + 2)] & 0xFF) << 1)) & 0xFF);
+                    RAM32S_1[4] = (short)(((byte)(((a[(short)(aa + 2)] & 0xFF) >> 4)) | (byte)((a[(short)(aa + 3)] & 0xFF) << 4)) & 0xFF);
+                    RAM32S_1[5] = (short)(((a[(short)(aa + 3)] & 0xFF) >> 1) & 0xFF);
+                    RAM32S_1[6] = (short)(((byte)(((a[(short)(aa + 3)] & 0xFF) >> 6)) | (byte)((a[(short)(aa + 4)] & 0xFF) << 2)) & 0xFF);
+                    RAM32S_1[7] = (short)(((a[(short)(aa + 4)] & 0xFF) >> 3) & 0xFF);
                     aa+=5;
                     for (byte j = 0; j < 8; j++)
                     {
-                        r[8 * i + j] = (short) ((((long) (t[j] & 31) * (KyberParams.paramsQ)) + 16) >> 5);
+                        //((long)(t[j] & 31) * (KyberParams.paramsQ))
+                        Arithmetic.multiplyShorts((short)(RAM32S_1[j] & 31), KyberParams.paramsQ, multiplied);
+                        //(((long)(t[j] & 31) * (KyberParams.paramsQ)) + 16)
+                        Arithmetic.add(multiplied[0], multiplied[1], (short)0, (short)16, multiplied);
+                        //r[8 * i + j] = (short)((((long)(t[j] & 31) * (KyberParams.paramsQ)) + 16) >> 5);
+                        r[(short)(8 * i + j)] = (short)(((multiplied[1] >> 5) & 0x7FF) | multiplied[0] << 11);
                     }
                 }
+                break;
         }
     }
 
@@ -260,6 +270,7 @@ public final class Poly
                 break;
             default:
                 l = KyberParams.paramsETAK768K1024 * KyberParams.paramsN / 4;
+                break;
         }
         //p = RAM384B_1
         this.generatePRFByteArray(l, seed, nonce, RAM384B_1);
@@ -404,6 +415,7 @@ public final class Poly
                     b = (short)(((RAM4B_1[0]&0xFF)>>6) & 0x3); //30
                     result[(short)(8 * i + 7)] = (short)(a - b);
                 }
+                break;
         }
     }
 
@@ -615,21 +627,16 @@ public final class Poly
                     {
                         for (byte k = 0; k < 4; k++)
                         {
-                            //t[k] = ((long) (((long) ((long) (a[i][4 * j + k]) << 10) + (long) (KyberParams.paramsQ / 2)) / (long) (KyberParams.paramsQ)) & 0x3ff);
-
                             this.arrayCopyNonAtomic(a,(short)(i*384),RAM384S_1,(short)0,(short)384);
 
-                            //((long) (a[i][4 * j + k]) << 10)
+                            //((long)(a[i][4 * j + k]) << 10)
                             short shHigh = (short)((RAM384S_1[(short)(4 * j + k)]) >> 6);
                             short shLow = (short)((RAM384S_1[(short)(4 * j + k)]) << 10);
-
-                            //((long) ((long) (a[i][4 * j + k]) << 10) + (long) (KyberParams.paramsQ / 2))
+                            //((long)((long)(a[i][4 * j + k]) << 10) + (long)(KyberParams.paramsQ / 2))
                             Arithmetic.add(shHigh, shLow, (short)0, (short)(KyberParams.paramsQ / 2), result);
-
-                            //(((long) ((long) (a[i][4 * j + k]) << 10) + (long) (KyberParams.paramsQ / 2)) / (long) (KyberParams.paramsQ))
+                            //(((long)((long)(a[i][4 * j + k]) << 10) + (long)(KyberParams.paramsQ / 2)) / (long)(KyberParams.paramsQ))
                             Arithmetic.divide(result[0], result[1], (short)0, KyberParams.paramsQ, result);
-
-                            //((long) (((long) ((long) (a[i][4 * j + k]) << 10) + (long) (KyberParams.paramsQ / 2)) / (long) (KyberParams.paramsQ)) & 0x3ff)
+                            //t[k] = ((long)(((long)((long)(a[i][4 * j + k]) << 10) + (long)(KyberParams.paramsQ / 2)) / (long)(KyberParams.paramsQ)) & 0x3FF);
                             RAM32S_1[k] = (short)(result[1]&0x3FF);
                         }
                         r[(short)(rr + 0)] = (byte)(RAM32S_1[0] >> 0);
@@ -642,30 +649,39 @@ public final class Poly
                 }
                 break;
             default:
-                short[] t = new short[8];
                 for (byte i = 0; i < paramsK; i++)
                 {
-                    for (int j = 0; j < KyberParams.paramsN / 8; j++)
+                    for (byte j = 0; j < KyberParams.paramsN / 8; j++)
                     {
-                        for (int k = 0; k < 8; k++)
+                        for (byte k = 0; k < 8; k++)
                         {
                             this.arrayCopyNonAtomic(a,(short)(i*384),RAM384S_1,(short)0,(short)384);
-                            t[k] = (short)((long) (((long) ((long) (RAM384S_1[8 * j + k]) << 11) + (long) (KyberParams.paramsQ / 2)) / (long) (KyberParams.paramsQ)) & 0x7ff);
+
+                            //((long)(a[i][8 * j + k]) << 11)
+                            short shHigh = (short)((RAM384S_1[(short)(8 * j + k)]) >> 5);
+                            short shLow = (short)((RAM384S_1[(short)(8 * j + k)]) << 11);
+                            //((long)((long)(a[i][8 * j + k]) << 11) + (long)(KyberParams.paramsQ / 2))
+                            Arithmetic.add(shHigh, shLow, (short)0, (short)(KyberParams.paramsQ / 2), result);
+                            //(((long)((long)(a[i][8 * j + k]) << 11) + (long)(KyberParams.paramsQ / 2)) / (long)(KyberParams.paramsQ))
+                            Arithmetic.divide(result[0], result[1], (short)0, KyberParams.paramsQ, result);
+                            //t[k] = ((long)(((long)((long)(a[i][8 * j + k]) << 11) + (long)(KyberParams.paramsQ / 2)) / (long)(KyberParams.paramsQ)) & 0x7FF);
+                            RAM32S_1[k] = (short)(result[1]&0x7FF);
                         }
-                        r[rr + 0] = (byte) ((t[0] >> 0));
-                        r[rr + 1] = (byte) ((t[0] >> 8) | (t[1] << 3));
-                        r[rr + 2] = (byte) ((t[1] >> 5) | (t[2] << 6));
-                        r[rr + 3] = (byte) ((t[2] >> 2));
-                        r[rr + 4] = (byte) ((t[2] >> 10) | (t[3] << 1));
-                        r[rr + 5] = (byte) ((t[3] >> 7) | (t[4] << 4));
-                        r[rr + 6] = (byte) ((t[4] >> 4) | (t[5] << 7));
-                        r[rr + 7] = (byte) ((t[5] >> 1));
-                        r[rr + 8] = (byte) ((t[5] >> 9) | (t[6] << 2));
-                        r[rr + 9] = (byte) ((t[6] >> 6) | (t[7] << 5));
-                        r[rr + 10] = (byte) ((t[7] >> 3));
+                        r[(short)(rr + 0)] = (byte)((RAM32S_1[0] >> 0));
+                        r[(short)(rr + 1)] = (byte)((RAM32S_1[0] >> 8) | (RAM32S_1[1] << 3));
+                        r[(short)(rr + 2)] = (byte)((RAM32S_1[1] >> 5) | (RAM32S_1[2] << 6));
+                        r[(short)(rr + 3)] = (byte)((RAM32S_1[2] >> 2));
+                        r[(short)(rr + 4)] = (byte)((RAM32S_1[2] >> 10) | (RAM32S_1[3] << 1));
+                        r[(short)(rr + 5)] = (byte)((RAM32S_1[3] >> 7) | (RAM32S_1[4] << 4));
+                        r[(short)(rr + 6)] = (byte)((RAM32S_1[4] >> 4) | (RAM32S_1[5] << 7));
+                        r[(short)(rr + 7)] = (byte)((RAM32S_1[5] >> 1));
+                        r[(short)(rr + 8)] = (byte)((RAM32S_1[5] >> 9) | (RAM32S_1[6] << 2));
+                        r[(short)(rr + 9)] = (byte)((RAM32S_1[6] >> 6) | (RAM32S_1[7] << 5));
+                        r[(short)(rr + 10)] = (byte)((RAM32S_1[7] >> 3));
                         rr+=11;
                     }
                 }
+                break;
         }
     }
 
@@ -678,7 +694,6 @@ public final class Poly
         {
             case 2:
             case 3:
-
                 for (byte i = 0; i < paramsK; i++)
                 {
                     for (byte j = 0; j < (KyberParams.paramsN / 4); j++)
@@ -692,10 +707,8 @@ public final class Poly
                         {
                             //(long) (t[k] & 0x3FF) * (long) (KyberParams.paramsQ)
                             Arithmetic.multiplyShorts((short)(RAM32S_1[k] & 0x3FF), KyberParams.paramsQ, multiplied);
-
                             //((long) (t[k] & 0x3FF) * (long) (KyberParams.paramsQ) + 512)
                             Arithmetic.add(multiplied[0], multiplied[1], (short)0, (short)512, multiplied);
-
                             //((long) (t[k] & 0x3FF) * (long) (KyberParams.paramsQ) + 512) >> 10
                             short value = (short)((multiplied[0]<<6) | (((multiplied[1]>>8)&(short)0xFF) >> 2));
 
@@ -707,28 +720,37 @@ public final class Poly
                 }
                 break;
             default:
-                int[] t = new int[8]; // has to be unsigned..
                 for (byte i = 0; i < paramsK; i++)
                 {
-                    for (int j = 0; j < (KyberParams.paramsN / 8); j++)
+                    for (byte j = 0; j < (KyberParams.paramsN / 8); j++)
                     {
-                        t[0] = (((a[aa + 0] & 0xff) >> 0) | ((a[aa + 1] & 0xff) << 8));
-                        t[1] = (((a[aa + 1] & 0xff) >> 3) | ((a[aa + 2] & 0xff) << 5));
-                        t[2] = (((a[aa + 2] & 0xff) >> 6) | ((a[aa + 3] & 0xff) << 2) | ((a[aa + 4] & 0xff) << 10));
-                        t[3] = (((a[aa + 4] & 0xff) >> 1) | ((a[aa + 5] & 0xff) << 7));
-                        t[4] = (((a[aa + 5] & 0xff) >> 4) | ((a[aa + 6] & 0xff) << 4));
-                        t[5] = (((a[aa + 6] & 0xff) >> 7) | ((a[aa + 7] & 0xff) << 1) | ((a[aa + 8] & 0xff) << 9));
-                        t[6] = (((a[aa + 8] & 0xff) >> 2) | ((a[aa + 9] & 0xff) << 6));
-                        t[7] = (((a[aa + 9] & 0xff) >> 5) | ((a[aa + 10] & 0xff) << 3));
+                        //RAM32S_1 = t = new short[8];
+                        RAM32S_1[0] = (short)(((a[(short)(aa + 0)] & 0xFF) >> 0) | ((a[(short)(aa + 1)] & 0xFF) << 8));
+                        RAM32S_1[1] = (short)(((a[(short)(aa + 1)] & 0xFF) >> 3) | ((a[(short)(aa + 2)] & 0xFF) << 5));
+                        RAM32S_1[2] = (short)(((a[(short)(aa + 2)] & 0xFF) >> 6) | ((a[(short)(aa + 3)] & 0xFF) << 2) | ((a[(short)(aa + 4)] & 0xFF) << 10));
+                        RAM32S_1[3] = (short)(((a[(short)(aa + 4)] & 0xFF) >> 1) | ((a[(short)(aa + 5)] & 0xFF) << 7));
+                        RAM32S_1[4] = (short)(((a[(short)(aa + 5)] & 0xFF) >> 4) | ((a[(short)(aa + 6)] & 0xFF) << 4));
+                        RAM32S_1[5] = (short)(((a[(short)(aa + 6)] & 0xFF) >> 7) | ((a[(short)(aa + 7)] & 0xFF) << 1) | ((a[(short)(aa + 8)] & 0xFF) << 9));
+                        RAM32S_1[6] = (short)(((a[(short)(aa + 8)] & 0xFF) >> 2) | ((a[(short)(aa + 9)] & 0xFF) << 6));
+                        RAM32S_1[7] = (short)(((a[(short)(aa + 9)] & 0xFF) >> 5) | ((a[(short)(aa + 10)] & 0xFF) << 3));
                         aa+=11;
-                        for (int k = 0; k < 8; k++)
+                        for (byte k = 0; k < 8; k++)
                         {
+                            //(long)(t[k] & 0x7FF) * (long)(KyberParams.paramsQ)
+                            Arithmetic.multiplyShorts((short)(RAM32S_1[k] & 0x7FF), KyberParams.paramsQ, multiplied);
+                            //((long)(t[k] & 0x7FF) * (long)(KyberParams.paramsQ) + 1024)
+                            Arithmetic.add(multiplied[0], multiplied[1], (short)0, (short)1024, multiplied);
+                            //(short)(((long)(t[k] & 0x7FF) * (long)(KyberParams.paramsQ) + 1024) >> 11)
+                            short value = (short)((multiplied[0] << 5) | (short)(((multiplied[1] >> 8) & 0xFF) >> 3));
+
                             this.arrayCopyNonAtomic(r, (short)(i * (short)384), RAM384S_1, (short)0, (short)384);
-                            RAM384S_1[8 * j + k] = (short) (((long) (t[k] & 0x7FF) * (long) (KyberParams.paramsQ) + 1024) >> 11);
+                            //RAM384S_1[8 * j + k] = (short)(((long)(t[k] & 0x7FF) * (long)(KyberParams.paramsQ) + 1024) >> 11);
+                            RAM384S_1[(short)(8 * j + k)] = value;
                             this.arrayCopyNonAtomic(RAM384S_1, (short)0, r, (short)(i * (short)384), (short)384);
                         }
                     }
                 }
+                break;
         }
     }
 
