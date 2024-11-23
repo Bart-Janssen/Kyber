@@ -420,6 +420,7 @@ public class KyberAlgorithm
         this.keccak = Keccak.getInstance(Keccak.ALG_SHA3_512);
         RandomData.OneShot random = RandomData.OneShot.open(RandomData.ALG_TRNG);
         if (KyberMain.random) random.nextBytes(this.EEPROM32B_1, (short)0, (short)32);
+        else for (byte i = 0; i < EEPROM32B_1.length; i++){EEPROM32B_1[i] = (byte)0x00;}
         random.close();
         this.keccak.doFinal(this.EEPROM32B_1, this.EEPROM384B_X_PARAMS_K_1);
         Util.arrayCopyNonAtomic(this.EEPROM384B_X_PARAMS_K_1, (short)0, this.EEPROM32B_1, (short)0, KyberParams.paramsSymBytes);
@@ -491,7 +492,7 @@ public class KyberAlgorithm
     public void packPublicKey(short[] publicKey, byte[] seed, byte paramsK)
     {
         //initialArray = EEPROM384B_X_PARAMS_K_1
-        //packedPublicKey = this.keyPair.publicKey
+        //packedPublicKey = this.publicKey
 
         Poly.getInstance().polyVectorToBytes(publicKey, paramsK, this.EEPROM384B_X_PARAMS_K_1);
         Util.arrayCopyNonAtomic(this.EEPROM384B_X_PARAMS_K_1, (short)0, this.publicKey, (short)0, (short)(384*paramsK));
