@@ -24,9 +24,10 @@ public class KyberAlgorithm
         //Create keccak instance so object is created, reserving EEPROM at startup rather than runtime
         this.keccak = Keccak.getInstance(Keccak.ALG_SHA3_256);
         this.poly = Poly.getInstance();
-        this.keyPair = KeyPair.getInstance(paramsK);
 
         //Array sizes initialized only once and at highest Kyber settings so the "init" function can set the Kyber mode
+        privateKey = new byte[(short)3168];
+        publicKey = new byte[KyberParams.paramsIndcpaPublicKeyBytesK1024];
         this.vCompress = new byte[KyberParams.paramsPolyCompressedBytesK1024];
         this.bCompress = new byte[KyberParams.paramsPolyvecCompressedBytesK1024];
         this.indcpaPrivateKey = new byte[KyberParams.paramsIndcpaSecretKeyBytesK1024];
@@ -66,18 +67,24 @@ public class KyberAlgorithm
         switch (paramsK)
         {
             case 2:
+                privateKeyLength = 1632;
+                publicKeyLength = KyberParams.paramsIndcpaPublicKeyBytesK512;
                 vCompressLength = KyberParams.paramsPolyCompressedBytesK768;//yes 768 intended
                 bCompressLength = KyberParams.paramsPolyvecCompressedBytesK512;
                 indcpaPrivateKeyLength = KyberParams.paramsIndcpaSecretKeyBytesK512;
                 privateKeyBytes = KyberParams.Kyber512SKBytes;
                 break;
             case 3:
+                privateKeyLength = 2400;
+                publicKeyLength = KyberParams.paramsIndcpaPublicKeyBytesK768;
                 vCompressLength = KyberParams.paramsPolyCompressedBytesK768;
                 bCompressLength = KyberParams.paramsPolyvecCompressedBytesK768;
                 indcpaPrivateKeyLength = KyberParams.paramsIndcpaSecretKeyBytesK768;
                 privateKeyBytes = KyberParams.Kyber768SKBytes;
                 break;
             default:
+                privateKeyLength = 3168;
+                publicKeyLength = KyberParams.paramsIndcpaPublicKeyBytesK1024;
                 vCompressLength = KyberParams.paramsPolyCompressedBytesK1024;
                 bCompressLength = KyberParams.paramsPolyvecCompressedBytesK1024;
                 indcpaPrivateKeyLength = KyberParams.paramsIndcpaSecretKeyBytesK1024;
@@ -97,10 +104,14 @@ public class KyberAlgorithm
 
     private byte paramsK;
     private Keccak keccak;
-    private KeyPair keyPair;
     private Poly poly;
 
     //Conditional arrays based on paramsK
+    public byte[] privateKey;
+    public short privateKeyLength;
+    public byte[] publicKey;
+    public short publicKeyLength;
+
     byte[] vCompress;//packCiphertext
     short vCompressLength;
     byte[] bCompress;//packCiphertext
@@ -161,13 +172,13 @@ public class KyberAlgorithm
         random.close();
         this.keccak = Keccak.getInstance(Keccak.ALG_SHA3_256);
         this.keccak.doFinal(EEPROM32B_1, EEPROM32B_2);
-        this.keccak.doFinal(this.keyPair.publicKey, EEPROM32B_1);
+        this.keccak.doFinal(this.publicKey, publicKeyLength, EEPROM32B_1);
         Util.arrayCopyNonAtomic(EEPROM32B_2, (short)0, EEPROM64B_1, (short)0, (short)EEPROM32B_2.length);
         Util.arrayCopyNonAtomic(EEPROM32B_1, (short)0, EEPROM64B_1, (short)EEPROM32B_2.length, (short)EEPROM32B_1.length);
         this.keccak = Keccak.getInstance(Keccak.ALG_SHA3_512);
         this.keccak.doFinal(EEPROM64B_1, EEPROM64B_2);
         Util.arrayCopyNonAtomic(EEPROM64B_2, KyberParams.paramsSymBytes, EEPROM32B_1, (short)0, (short)EEPROM32B_1.length);
-        this.encrypt(EEPROM32B_2, this.keyPair.publicKey, EEPROM32B_1);
+        this.encrypt(EEPROM32B_2, this.publicKey, EEPROM32B_1);
         this.keccak = Keccak.getInstance(Keccak.ALG_SHA3_256);
         this.keccak.doFinal(this.encapsulation, encapsulationLength, EEPROM32B_1);
         Util.arrayCopyNonAtomic(EEPROM64B_2, (short)0, EEPROM64B_1, (short)0, KyberParams.paramsSymBytes);
@@ -190,24 +201,24 @@ public class KyberAlgorithm
         //tempBuf = EEPROM64B_2
         //return array = EEPROM1568B_1
 
-        Util.arrayCopyNonAtomic(this.keyPair.privateKey, (short)0, indcpaPrivateKey, (short)0, indcpaPrivateKeyLength);
-        Util.arrayCopyNonAtomic(this.keyPair.privateKey, indcpaPrivateKeyLength, keyPair.publicKey, (short)0, (short)keyPair.publicKey.length);
+        Util.arrayCopyNonAtomic(this.privateKey, (short)0, indcpaPrivateKey, (short)0, indcpaPrivateKeyLength);
+        Util.arrayCopyNonAtomic(this.privateKey, indcpaPrivateKeyLength, publicKey, (short)0, publicKeyLength);
         this.decrypt(this.encapsulation, indcpaPrivateKey, EEPROM32B_2);//begin EEPROM32B_2
         short ski = (short)(privateKeyBytes - (2 * KyberParams.paramsSymBytes));
         Util.arrayCopyNonAtomic(EEPROM32B_2, (short)0, EEPROM64B_2, (short)0, (short)32);//begin EEPROM64B_2
-        Util.arrayCopyNonAtomic(this.keyPair.privateKey, ski, EEPROM64B_2, (short)32, KyberParams.paramsSymBytes);
+        Util.arrayCopyNonAtomic(this.privateKey, ski, EEPROM64B_2, (short)32, KyberParams.paramsSymBytes);
         this.keccak = Keccak.getInstance(Keccak.ALG_SHA3_512);
         this.keccak.doFinal(EEPROM64B_2, EEPROM64B_1);//end EEPROM64B_2, begin EEPROM64B_1
         Util.arrayCopyNonAtomic(EEPROM64B_1, KyberParams.paramsSymBytes, EEPROM32B_1, (short)0, (short)32);//begin EEPROM32B_1
         Util.arrayCopyNonAtomic(this.encapsulation, (short)0, EEPROM1568B_1, (short)0, encapsulationLength);
-        this.encrypt(EEPROM32B_2, keyPair.publicKey, EEPROM32B_1);//end EEPROM32B_1
+        this.encrypt(EEPROM32B_2, publicKey, EEPROM32B_1);//end EEPROM32B_1
         byte fail = this.constantTimeCompare(this.encapsulation, EEPROM1568B_1, encapsulationLength);
         this.keccak = Keccak.getInstance(Keccak.ALG_SHA3_256);
         this.keccak.doFinal(this.encapsulation, encapsulationLength, EEPROM32B_1);//begin EEPROM32B_1
         short index = (short)(privateKeyBytes - KyberParams.paramsSymBytes);
         for (byte i = 0; i < KyberParams.paramsSymBytes; i++)
         {
-            byte privateKeyIndex = (byte)(this.keyPair.privateKey[index] & (byte)0xFF);
+            byte privateKeyIndex = (byte)(this.privateKey[index] & (byte)0xFF);
             byte krIndex = (byte)(EEPROM64B_1[i] & (byte)0xFF);
             EEPROM64B_1[i] = (byte)(krIndex ^ (byte)(fail & (byte)0xFF & (byte)(privateKeyIndex ^ krIndex)));
             index += 1;
@@ -379,17 +390,17 @@ public class KyberAlgorithm
 
         this.generateKyberKeys();
         this.keccak = Keccak.getInstance(Keccak.ALG_SHA3_256);
-        this.keccak.doFinal(this.keyPair.publicKey, EEPROM32B_1);
+        this.keccak.doFinal(this.publicKey, publicKeyLength, EEPROM32B_1);
         RandomData.OneShot random = RandomData.OneShot.open(RandomData.ALG_TRNG);
         if (KyberMain.random) random.nextBytes(this.EEPROM32B_2, (short)0, (short)32);
         else for (byte i = 0; i < EEPROM32B_2.length; i++){EEPROM32B_2[i] = (byte)0x00;}
         random.close();
         short offsetEnd = (short)(this.paramsK * KyberParams.paramsPolyBytes);
-        Util.arrayCopyNonAtomic(this.keyPair.publicKey, (short)0, this.keyPair.privateKey, offsetEnd, (short)this.keyPair.publicKey.length);
-        offsetEnd = (short)(offsetEnd + this.keyPair.publicKey.length);
-        Util.arrayCopyNonAtomic(this.EEPROM32B_1, (short)0, this.keyPair.privateKey, offsetEnd, (short)this.EEPROM32B_1.length);
+        Util.arrayCopyNonAtomic(this.publicKey, (short)0, this.privateKey, offsetEnd, this.publicKeyLength);
+        offsetEnd = (short)(offsetEnd + this.publicKeyLength);
+        Util.arrayCopyNonAtomic(this.EEPROM32B_1, (short)0, this.privateKey, offsetEnd, (short)this.EEPROM32B_1.length);
         offsetEnd += (short)this.EEPROM32B_1.length;
-        Util.arrayCopyNonAtomic(this.EEPROM32B_2, (short)0, this.keyPair.privateKey, offsetEnd, (short)this.EEPROM32B_2.length);
+        Util.arrayCopyNonAtomic(this.EEPROM32B_2, (short)0, this.privateKey, offsetEnd, (short)this.EEPROM32B_2.length);
         //priv = priv || pub || pkh (pub hash) || rnd
     }
 
@@ -472,7 +483,7 @@ public class KyberAlgorithm
     //smart card ok, opt ok
     public void packPrivateKey(short[] privateKey, byte paramsK)
     {
-        Poly.getInstance().polyVectorToBytes(privateKey, paramsK, this.keyPair.privateKey);
+        Poly.getInstance().polyVectorToBytes(privateKey, paramsK, this.privateKey);
     }
 
     //phase 1
@@ -483,8 +494,8 @@ public class KyberAlgorithm
         //packedPublicKey = this.keyPair.publicKey
 
         Poly.getInstance().polyVectorToBytes(publicKey, paramsK, this.EEPROM384B_X_PARAMS_K_1);
-        Util.arrayCopyNonAtomic(this.EEPROM384B_X_PARAMS_K_1, (short)0, this.keyPair.publicKey, (short)0, (short)(384*paramsK));
-        Util.arrayCopyNonAtomic(seed, (short)0, this.keyPair.publicKey, (short)(384*paramsK), (short)seed.length);
+        Util.arrayCopyNonAtomic(this.EEPROM384B_X_PARAMS_K_1, (short)0, this.publicKey, (short)0, (short)(384*paramsK));
+        Util.arrayCopyNonAtomic(seed, (short)0, this.publicKey, (short)(384*paramsK), (short)seed.length);
     }
 
     //phase 2, smart card op, opt ok

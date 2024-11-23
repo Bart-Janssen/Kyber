@@ -2,7 +2,6 @@ package Kyber.Implementation.SmartCard;
 
 import Kyber.Models.KeyPair;
 import Kyber.Models.KyberEncrypted;
-import Kyber.Models.KyberParams;
 import Kyber.service.KyberService;
 
 //Fake applet
@@ -10,8 +9,7 @@ public class Applet extends KyberService
 {
     private static Applet applet;
 
-    //Fake keypair in smart card
-    private KeyPair keyPair;
+    private KyberAlgorithm kyber;
 
     public static Applet getInstance()
     {
@@ -22,102 +20,53 @@ public class Applet extends KyberService
     //Fake apdu call to get public key
     public byte[] getPublicKey()
     {
-        return this.keyPair.publicKey;
+        return this.kyber.publicKey;
     }
 
     //Fake apdu call to get private key
     public byte[] getPrivateKey()
     {
-        return this.keyPair.privateKey;
+        return this.kyber.privateKey;
     }
 
     @Override
     public KeyPair generateKeys(int mode) throws Exception
     {
-        if (mode == 512)
-        {
-            byte paramsK = (byte)2;
-            KyberAlgorithm.getInstance(paramsK).generateKeys();
-            this.keyPair = KeyPair.getInstance(paramsK);
-            return this.keyPair;//ignored
-        }
-        if (mode == 768)
-        {
-            byte paramsK = (byte)3;
-            KyberAlgorithm.getInstance(paramsK).generateKeys();
-            this.keyPair = KeyPair.getInstance(paramsK);
-            return this.keyPair;//ignored
-        }
-        if (mode == 1024)
-        {
-            byte paramsK = (byte)4;
-            KyberAlgorithm.getInstance(paramsK).generateKeys();
-            this.keyPair = KeyPair.getInstance(paramsK);
-            return this.keyPair;//ignored
-        }
-        throw new RuntimeException("Mode not supported");
+        byte paramsK;
+        if (mode == 512) paramsK = (byte)2;
+        else if (mode == 768) paramsK = (byte)3;
+        else if (mode == 1024) paramsK = (byte)4;
+        else throw new RuntimeException("Mode not supported");
+        kyber = KyberAlgorithm.getInstance(paramsK);
+        kyber.generateKeys();
+        return new KeyPair(kyber.privateKey, kyber.publicKey);//ignored
     }
 
     @Override
     public KyberEncrypted encapsulate(int mode, byte[] publicKey) throws Exception
     {
-        if (mode == 512)
-        {
-            byte paramsK = (byte)2;
-            this.keyPair = KeyPair.getInstance(paramsK);
-            this.keyPair.publicKey = publicKey;
-            KyberAlgorithm.getInstance(paramsK).encapsulate();
-            return new KyberEncrypted(KyberAlgorithm.getInstance(paramsK).encapsulation, KyberAlgorithm.getInstance(paramsK).secretKey);
-        }
-        if (mode == 768)
-        {
-            byte paramsK = (byte)3;
-            this.keyPair = KeyPair.getInstance(paramsK);
-            this.keyPair.publicKey = publicKey;
-            KyberAlgorithm.getInstance(paramsK).encapsulate();
-            return new KyberEncrypted(KyberAlgorithm.getInstance(paramsK).encapsulation, KyberAlgorithm.getInstance(paramsK).secretKey);
-        }
-        if (mode == 1024)
-        {
-            byte paramsK = (byte)4;
-            this.keyPair = KeyPair.getInstance(paramsK);
-            this.keyPair.publicKey = publicKey;
-            KyberAlgorithm.getInstance(paramsK).encapsulate();
-            return new KyberEncrypted(KyberAlgorithm.getInstance(paramsK).encapsulation, KyberAlgorithm.getInstance(paramsK).secretKey);
-        }
-        throw new RuntimeException("Mode not supported");
+        byte paramsK;
+        if (mode == 512) paramsK = (byte)2;
+        else if (mode == 768) paramsK = (byte)3;
+        else if (mode == 1024) paramsK = (byte)4;
+        else throw new RuntimeException("Mode not supported");
+        kyber = KyberAlgorithm.getInstance(paramsK);
+        kyber.publicKey = publicKey;
+        kyber.encapsulate();
+        return new KyberEncrypted(KyberAlgorithm.getInstance(paramsK).encapsulation, KyberAlgorithm.getInstance(paramsK).secretKey);
     }
 
     @Override
     public byte[] decapsulate(int mode, byte[] privateKey, byte[] encapsulation) throws Exception
     {
-        if (mode == 512)
-        {
-            byte paramsK = (byte)2;
-            this.keyPair = KeyPair.getInstance(paramsK);
-            this.keyPair.privateKey = privateKey;
-            KyberAlgorithm.getInstance(paramsK).encapsulation = encapsulation;
-            KyberAlgorithm.getInstance(paramsK).decapsulate();
-            return KyberAlgorithm.getInstance(paramsK).secretKey;
-        }
-        if (mode == 768)
-        {
-            byte paramsK = (byte)3;
-            this.keyPair = KeyPair.getInstance(paramsK);
-            this.keyPair.privateKey = privateKey;
-            KyberAlgorithm.getInstance(paramsK).encapsulation = encapsulation;
-            KyberAlgorithm.getInstance(paramsK).decapsulate();
-            return KyberAlgorithm.getInstance(paramsK).secretKey;
-        }
-        if (mode == 1024)
-        {
-            byte paramsK = (byte)4;
-            this.keyPair = KeyPair.getInstance(paramsK);
-            this.keyPair.privateKey = privateKey;
-            KyberAlgorithm.getInstance(paramsK).encapsulation = encapsulation;
-            KyberAlgorithm.getInstance(paramsK).decapsulate();
-            return KyberAlgorithm.getInstance(paramsK).secretKey;
-        }
-        throw new RuntimeException("Mode not supported");
+        byte paramsK;
+        if (mode == 512) paramsK = (byte)2;
+        else if (mode == 768) paramsK = (byte)3;
+        else if (mode == 1024) paramsK = (byte)4;
+        else throw new RuntimeException("Mode not supported");
+        kyber.privateKey = privateKey;
+        KyberAlgorithm.getInstance(paramsK).encapsulation = encapsulation;
+        KyberAlgorithm.getInstance(paramsK).decapsulate();
+        return KyberAlgorithm.getInstance(paramsK).secretKey;
     }
 }
