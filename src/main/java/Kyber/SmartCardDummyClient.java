@@ -7,7 +7,7 @@ public class SmartCardDummyClient extends Client
 {
     private KyberDummySmartCard smartCard;
 
-    public SmartCardDummyClient(int mode) throws Exception
+    public SmartCardDummyClient(int mode)
     {
         super.mode = mode;
         this.smartCard = new KyberDummySmartCard(super.mode, null, false);

@@ -299,13 +299,24 @@ public class Keccak {
     //Constructor
     protected Keccak() {}
 
+    //Public doFinal functions
+    public short doFinal(byte[] inBuff, byte[] outBuff) throws CryptoException
+    {
+        return this.doFinalInternal(inBuff, (short)inBuff.length, outBuff);
+    }
+
+    public short doFinal(byte[] inBuff, short inLength, byte[] outBuff) throws CryptoException
+    {
+        return this.doFinalInternal(inBuff, inLength, outBuff);
+    }
+
     //generate hash of all data, reset engine
-    public short doFinal(byte[] inBuff, byte[] outBuff) throws CryptoException {
+    private short doFinalInternal(byte[] inBuff, short inLength, byte[] outBuff) throws CryptoException
+    {
         this.reset();
         short i;
         short inOffset = 0;
         short outOffset = 0;
-        short inLength = (short)inBuff.length;
         update(inBuff, inOffset, inLength);
 
         st[pt] ^= pad;
