@@ -1,5 +1,6 @@
 package Kyber.Implementation.SmartCard;
 
+import Kyber.Implementation.SmartCard.dummy.Util;
 import Kyber.Models.KeyPair;
 import Kyber.Models.KyberEncrypted;
 import Kyber.service.KyberService;
@@ -20,13 +21,17 @@ public class Applet extends KyberService
     //Fake apdu call to get public key
     public byte[] getPublicKey()
     {
-        return this.kyber.publicKey;
+        byte[] publicKey = new byte[kyber.publicKeyLength];
+        Util.arrayCopyNonAtomic(kyber.publicKey, (short)0, publicKey, (short)0, kyber.publicKeyLength);
+        return publicKey;
     }
 
     //Fake apdu call to get private key
     public byte[] getPrivateKey()
     {
-        return this.kyber.privateKey;
+        byte[] privateKey = new byte[kyber.privateKeyLength];
+        Util.arrayCopyNonAtomic(kyber.privateKey, (short)0, privateKey, (short)0, kyber.privateKeyLength);
+        return privateKey;
     }
 
     @Override
@@ -51,7 +56,7 @@ public class Applet extends KyberService
         else if (mode == 1024) paramsK = (byte)4;
         else throw new RuntimeException("Mode not supported");
         kyber = KyberAlgorithm.getInstance(paramsK);
-        kyber.publicKey = publicKey;
+        Util.arrayCopyNonAtomic(publicKey, (short)0, kyber.publicKey, (short)0, kyber.publicKeyLength);
         kyber.encapsulate();
         return new KyberEncrypted(KyberAlgorithm.getInstance(paramsK).encapsulation, KyberAlgorithm.getInstance(paramsK).secretKey);
     }
@@ -64,7 +69,7 @@ public class Applet extends KyberService
         else if (mode == 768) paramsK = (byte)3;
         else if (mode == 1024) paramsK = (byte)4;
         else throw new RuntimeException("Mode not supported");
-        kyber.privateKey = privateKey;
+        Util.arrayCopyNonAtomic(privateKey, (short)0, kyber.privateKey, (short)0, kyber.privateKeyLength);
         KyberAlgorithm.getInstance(paramsK).encapsulation = encapsulation;
         KyberAlgorithm.getInstance(paramsK).decapsulate();
         return KyberAlgorithm.getInstance(paramsK).secretKey;
