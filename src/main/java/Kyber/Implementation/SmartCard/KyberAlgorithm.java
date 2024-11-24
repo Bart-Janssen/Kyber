@@ -150,7 +150,6 @@ public class KyberAlgorithm
 
     private short uniformI = 0;
     public byte[] secretKey;
-    public byte[] plain;
     private short[] publicKeyPolyvec;
     private byte[] seed;
     
@@ -198,7 +197,6 @@ public class KyberAlgorithm
         //subKr = EEPROM32B_1
         //krh = EEPROM32B_1
         //sharedSecretFixedLength = EEPROM32B_1
-        //plain = EEPROM32B_2
         //tempBuf = EEPROM64B_2
         //return array = EEPROM1568B_1
 
@@ -229,7 +227,6 @@ public class KyberAlgorithm
         this.keccak = Keccak.getInstance(Keccak.ALG_SHAKE_256);
         this.keccak.setShakeDigestLength((short)32);
         this.keccak.doFinal(EEPROM64B_2, EEPROM32B_1);//end EEPROM64B_2, begin EEPROM32B_1
-        this.plain = EEPROM32B_2;//end EEPROM32B_2
         Util.arrayCopyNonAtomic(EEPROM32B_1, (short)0, secretKey, (short)0, (short)32);
     }
 
