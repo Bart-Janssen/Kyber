@@ -57,6 +57,7 @@ public class KyberAlgorithm
         EEPROM64B_2 = new byte[64];
         EEPROM256S_1 = new short[256];
         this.seed = new byte[32];
+        this.secretKey = new byte[32];
     }
 
     private static KyberAlgorithm kyber;
@@ -186,7 +187,7 @@ public class KyberAlgorithm
         this.keccak = Keccak.getInstance(Keccak.ALG_SHAKE_256);
         this.keccak.setShakeDigestLength((short)32);
         this.keccak.doFinal(EEPROM64B_1, EEPROM32B_1);
-        this.secretKey = EEPROM32B_1;
+        Util.arrayCopyNonAtomic(EEPROM32B_1, (short)0, secretKey, (short)0, (short)32);
     }
 
     //phase 3, smart card ok, opt ok
@@ -212,9 +213,9 @@ public class KyberAlgorithm
         Util.arrayCopyNonAtomic(EEPROM64B_1, KyberParams.paramsSymBytes, EEPROM32B_1, (short)0, (short)32);//begin EEPROM32B_1
         Util.arrayCopyNonAtomic(this.encapsulation, (short)0, EEPROM1568B_1, (short)0, encapsulationLength);
         this.encrypt(EEPROM32B_2, publicKey, EEPROM32B_1);//end EEPROM32B_1
-        byte fail = this.constantTimeCompare(this.encapsulation, EEPROM1568B_1, encapsulationLength);
+        byte fail = this.constantTimeCompare(EEPROM1568B_1, this.encapsulation, encapsulationLength);
         this.keccak = Keccak.getInstance(Keccak.ALG_SHA3_256);
-        this.keccak.doFinal(this.encapsulation, encapsulationLength, EEPROM32B_1);//begin EEPROM32B_1
+        this.keccak.doFinal(EEPROM1568B_1, encapsulationLength, EEPROM32B_1);//begin EEPROM32B_1
         short index = (short)(privateKeyBytes - KyberParams.paramsSymBytes);
         for (byte i = 0; i < KyberParams.paramsSymBytes; i++)
         {
@@ -229,7 +230,7 @@ public class KyberAlgorithm
         this.keccak.setShakeDigestLength((short)32);
         this.keccak.doFinal(EEPROM64B_2, EEPROM32B_1);//end EEPROM64B_2, begin EEPROM32B_1
         this.plain = EEPROM32B_2;//end EEPROM32B_2
-        this.secretKey = EEPROM32B_1; //end EEPROM32B_1
+        Util.arrayCopyNonAtomic(EEPROM32B_1, (short)0, secretKey, (short)0, (short)32);
     }
 
     //phase 3, smart card ok, opt ok

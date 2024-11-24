@@ -27,6 +27,6 @@ public class SmartCardDummyServer extends Server
     @Override
     public byte[] getPublic()
     {
-        return super.publicKey;
+        return this.smartCard.getPublicKey();
     }
 }

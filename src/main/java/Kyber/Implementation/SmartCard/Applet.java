@@ -58,7 +58,11 @@ public class Applet extends KyberService
         kyber = KyberAlgorithm.getInstance(paramsK);
         Util.arrayCopyNonAtomic(publicKey, (short)0, kyber.publicKey, (short)0, kyber.publicKeyLength);
         kyber.encapsulate();
-        return new KyberEncrypted(KyberAlgorithm.getInstance(paramsK).encapsulation, KyberAlgorithm.getInstance(paramsK).secretKey);
+        byte[] encapsulation = new byte[kyber.encapsulationLength];
+        Util.arrayCopyNonAtomic(kyber.encapsulation, (short)0, encapsulation, (short)0, kyber.encapsulationLength);
+        byte[] secretKey = new byte[32];
+        Util.arrayCopyNonAtomic(kyber.secretKey, (short)0, secretKey, (short)0, (short)32);
+        return new KyberEncrypted(encapsulation, secretKey);
     }
 
     @Override
@@ -69,9 +73,12 @@ public class Applet extends KyberService
         else if (mode == 768) paramsK = (byte)3;
         else if (mode == 1024) paramsK = (byte)4;
         else throw new RuntimeException("Mode not supported");
+        kyber = KyberAlgorithm.getInstance(paramsK);
         Util.arrayCopyNonAtomic(privateKey, (short)0, kyber.privateKey, (short)0, kyber.privateKeyLength);
-        KyberAlgorithm.getInstance(paramsK).encapsulation = encapsulation;
-        KyberAlgorithm.getInstance(paramsK).decapsulate();
-        return KyberAlgorithm.getInstance(paramsK).secretKey;
+        Util.arrayCopyNonAtomic(encapsulation, (short)0, kyber.encapsulation, (short)0, kyber.encapsulationLength);
+        kyber.decapsulate();
+        byte[] secretKey = new byte[32];
+        Util.arrayCopyNonAtomic(kyber.secretKey, (short)0, secretKey, (short)0, (short)32);
+        return secretKey;
     }
 }
