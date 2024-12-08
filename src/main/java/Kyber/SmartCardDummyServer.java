@@ -20,7 +20,7 @@ public class SmartCardDummyServer extends Server
     @Override
     public void decapsulate(byte[] encapsulation) throws Exception
     {
-        super.aesKey = this.smartCard.decapsulate(super.mode,  encapsulation, this.smartCard.getPrivateKey());
+        super.aesKey = this.smartCard.decapsulate(super.mode, encapsulation, this.smartCard.getPrivateKey());
         System.out.print("[Smart card server]  : Decapsulated secret: " + super.aesKey.length + " | ");super.print(super.aesKey);
     }
 

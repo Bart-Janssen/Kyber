@@ -1,17 +1,25 @@
 package Kyber;
 
+import java.security.SecureRandom;
+
 public class KyberMain
 {
     public static boolean random = false;
-    
+
     public static void main(String[] args)
     {
         try
         {
-            for (int i = 1; i <= 1; i++)
+            for (int i = 1; i <= 2; i++)
             {
                 int mode = 1024;
-                System.out.println("Iteration: " + i);
+//                byte[] allowedValues = {2, 3, 4};
+//                byte randomByte = allowedValues[new SecureRandom().nextInt(allowedValues.length)];
+//                if (randomByte == 2) mode = 512;
+//                else if (randomByte == 3) mode = 768;
+//                else mode = 1024;
+
+                System.out.println("Iteration: " + i + ", mode = " + mode);
 //                Server server = new KeyServer(mode, true, true);
 //                Server server = new JCEServer(mode);
                 Server server = new SmartCardDummyServer(mode);
